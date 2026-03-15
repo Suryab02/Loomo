@@ -58,20 +58,17 @@ function Insights() {
         </div>
 
         {/* Stat cards */}
-import StatCard from '../components/StatCard'
-
-// Replace stat cards grid with same pattern
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-  {statCards.map(card => (
-    <StatCard
-      key={card.label}
-      label={card.label}
-      value={card.value}
-      color={card.color}
-      bg={card.bg}
-    />
-  ))}
-</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+          {statCards.map(card => (
+            <StatCard
+              key={card.label}
+              label={card.label}
+              value={card.value}
+              color={card.color}
+              bg={card.bg}
+            />
+          ))}
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
 

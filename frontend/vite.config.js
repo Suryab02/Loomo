@@ -11,5 +11,17 @@ export default defineConfig({
     fs: {
       strict: false
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          charts: ['recharts'],
+          dnd: ['@hello-pangea/dnd'],
+        }
+      }
+    }
   }
 })

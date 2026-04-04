@@ -32,6 +32,7 @@ export const parseJobText = (data) => API.post('/jobs/parse-text', data)
 export const parseJobUrl = (data) => API.post('/jobs/parse-url', data)
 export const updateJobStatus = (id, status) => API.put(`/jobs/${id}/status`, { status })
 export const deleteJob = (id) => API.delete(`/jobs/${id}`)
+export const syncGmail = () => API.get('/jobs/sync-gmail')
 
 // Insights
 export const getStats = () => API.get('/insights/stats')

@@ -10,15 +10,12 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from app.services.job_parser import parse_job_text
-from app.services.url_scraper import scrape_job_from_url
+from app.services.gmail_sync import get_gmail_jobs
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 class ParseTextRequest(BaseModel):
     text: str
-
-class ParseUrlRequest(BaseModel):
-    url: str
 
 class JobRequest(BaseModel):
     company: str
@@ -42,17 +39,6 @@ def parse_text(
 ):
     try:
         parsed_data = parse_job_text(request.text)
-        return parsed_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/parse-url")
-async def parse_url(
-    request: ParseUrlRequest,
-    current_user: User = Depends(get_current_user)
-):
-    try:
-        parsed_data = await scrape_job_from_url(request.url)
         return parsed_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -167,3 +153,15 @@ def delete_job(
     db.delete(job)
     db.commit()
     return {"message": "Job deleted successfully"}
+
+@router.get("/sync-gmail")
+def sync_gmail(
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        gmail_jobs = get_gmail_jobs()
+        if isinstance(gmail_jobs, dict) and "error" in gmail_jobs:
+            return gmail_jobs
+        return {"jobs_found": gmail_jobs}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

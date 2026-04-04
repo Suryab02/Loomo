@@ -1,33 +1,15 @@
-function StatCard({ label, value, color, bg }) {
+import { motion } from 'framer-motion'
+
+export default function StatCard({ label, value, index = 0 }) {
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '14px',
-      padding: '20px 24px',
-      boxShadow: 'var(--shadow-sm)',
-      border: '1px solid var(--border)'
-    }}>
-      <div style={{
-        display: 'inline-flex',
-        padding: '5px 10px',
-        borderRadius: '8px',
-        background: bg,
-        color: color,
-        fontSize: '12px',
-        fontWeight: 600,
-        marginBottom: '12px'
-      }}>
-        {label}
-      </div>
-      <div style={{
-        fontSize: '32px',
-        fontWeight: 700,
-        color: 'var(--text)'
-      }}>
-        {value}
-      </div>
-    </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ delay: index * 0.05 }}
+      className="p-5 rounded-[16px] border border-[#ededed] bg-white flex flex-col gap-1 shadow-sm"
+    >
+      <div className="text-[#737373] text-[11px] font-semibold uppercase tracking-widest">{label}</div>
+      <div className="text-3xl font-medium tracking-tight text-[#111111]">{value}</div>
+    </motion.div>
   )
 }
-
-export default StatCard

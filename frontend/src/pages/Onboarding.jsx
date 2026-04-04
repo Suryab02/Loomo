@@ -1,18 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Orbit, Upload, CheckCircle2 } from 'lucide-react'
 import { uploadResume, savePreferences } from '../services/api'
-
-const inputStyle = {
-  width: '100%', padding: '10px 13px', borderRadius: '8px',
-  border: '1.5px solid var(--border)', fontSize: '14px',
-  outline: 'none', fontFamily: 'Geist, sans-serif',
-  color: 'var(--text)', background: 'white', transition: 'border-color 0.15s'
-}
-
-const labelStyle = {
-  display: 'block', fontSize: '13px', fontWeight: 500,
-  color: 'var(--text)', marginBottom: '6px'
-}
 
 function Onboarding() {
   const navigate = useNavigate()
@@ -22,12 +12,8 @@ function Onboarding() {
   const [resumeData, setResumeData] = useState(null)
   const [file, setFile] = useState(null)
   const [prefs, setPrefs] = useState({
-    target_role: '',
-    work_type: 'remote',
-    target_location: '',
-    expected_ctc: '',
-    notice_period: '',
-    platforms: ''
+    target_role: '', work_type: 'remote', target_location: '',
+    expected_ctc: '', notice_period: '', platforms: ''
   })
 
   const handleFileChange = (e) => setFile(e.target.files[0])
@@ -47,9 +33,7 @@ function Onboarding() {
     }
   }
 
-  const handlePrefsChange = (e) => {
-    setPrefs({ ...prefs, [e.target.name]: e.target.value })
-  }
+  const handlePrefsChange = (e) => setPrefs({ ...prefs, [e.target.name]: e.target.value })
 
   const handleSavePrefs = async () => {
     setLoading(true)
@@ -65,228 +49,131 @@ function Onboarding() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', background: 'var(--bg)',
-      display: 'flex', alignItems: 'center',
-      justifyContent: 'center', padding: '24px'
-    }}>
-      <div style={{ width: '100%', maxWidth: '520px' }}>
-
+    <div className="min-h-screen bg-[#f7f7f7] flex items-center justify-center p-6">
+      <div className="w-full max-w-[500px]">
+        
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>
-            HuntDesk 🎯
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-[16px] bg-[#f5f3ff] border border-[#ede9fe] flex items-center justify-center mb-4">
+            <Orbit className="w-6 h-6 text-[#6d28d9]" />
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
-            Let's set up your dashboard
-          </p>
+          <h1 className="text-2xl font-semibold text-[#111111] tracking-tight">Setup Loomo</h1>
+          <p className="text-[#737373] text-[15px] mt-1">Let's configure your AI agent</p>
         </div>
 
-        <div style={{
-          background: 'white', borderRadius: '16px', padding: '36px',
-          boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)'
-        }}>
-
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[24px] shadow-sm border border-[#ededed] p-8 md:p-10"
+        >
           {/* Progress bar */}
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '32px' }}>
+          <div className="flex gap-2 mb-8">
             {[1, 2, 3].map(s => (
-              <div key={s} style={{
-                flex: 1, height: '4px', borderRadius: '99px',
-                background: s <= step ? 'var(--accent)' : 'var(--border)',
-                transition: 'background 0.3s'
-              }} />
+              <div key={s} className={`flex-1 h-1.5 rounded-full transition-colors ${s <= step ? 'bg-[#6d28d9]' : 'bg-[#f7f7f7]'}`} />
             ))}
           </div>
 
-          {/* Step label */}
-          <p style={{
-            fontSize: '12px', fontWeight: 600, color: 'var(--accent)',
-            textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px'
-          }}>
-            Step {step} of 3
-          </p>
+          <p className="text-[11px] font-bold text-[#6d28d9] uppercase tracking-widest mb-3">Step {step} of 3</p>
 
-          {/* Error */}
           {error && (
-            <div style={{
-              background: 'var(--danger-light)', border: '1px solid #fecaca',
-              color: 'var(--danger)', borderRadius: '10px', padding: '12px 16px',
-              fontSize: '14px', marginBottom: '20px'
-            }}>
+            <div className="mb-6 p-4 rounded-[12px] bg-[#fef2f2] text-[#dc2626] border border-[#fecaca] text-[14px]">
               {error}
             </div>
           )}
 
-          {/* ── Step 1 — Upload Resume ── */}
+          {/* STEP 1 */}
           {step === 1 && (
-            <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>
-                Upload your resume
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
-                We'll extract your skills and experience automatically
-              </p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <h2 className="text-xl font-semibold text-[#111111] mb-1">Upload your resume</h2>
+              <p className="text-[#737373] text-[14px] mb-6">We'll automatically extract your baseline skills.</p>
 
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-                id="resume-upload"
-              />
-              <label htmlFor="resume-upload" style={{
-                display: 'block', border: '2px dashed var(--border)',
-                borderRadius: '12px', padding: '36px', textAlign: 'center',
-                cursor: 'pointer', marginBottom: '20px', transition: 'border-color 0.15s',
-                background: file ? 'var(--accent-light)' : 'transparent'
-              }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#2563eb'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+              <input type="file" accept=".pdf" onChange={handleFileChange} className="hidden" id="resume" />
+              <label 
+                htmlFor="resume" 
+                className={`block border-2 border-dashed rounded-[16px] p-10 text-center cursor-pointer mb-6 transition-all ${file ? 'border-[#6d28d9] bg-[#f5f3ff]' : 'border-[#ededed] hover:border-[#a3a3a3]'}`}
               >
-                <div style={{ fontSize: '32px', marginBottom: '10px' }}>
-                  {file ? '✅' : '📄'}
+                <div className="flex justify-center mb-3">
+                  {file ? <CheckCircle2 className="w-8 h-8 text-[#6d28d9]" /> : <Upload className="w-8 h-8 text-[#a3a3a3]" />}
                 </div>
-                <p style={{
-                  fontSize: '14px', fontWeight: 500,
-                  color: file ? 'var(--accent)' : 'var(--text-muted)'
-                }}>
-                  {file ? file.name : 'Click to upload your PDF resume'}
+                <p className={`text-[14px] font-medium ${file ? 'text-[#6d28d9]' : 'text-[#737373]'}`}>
+                  {file ? file.name : 'Click to select your PDF resume'}
                 </p>
-                {!file && (
-                  <p style={{ fontSize: '12px', color: 'var(--text-subtle)', marginTop: '4px' }}>
-                    PDF only
-                  </p>
-                )}
               </label>
 
               <button
-                onClick={handleUploadResume}
-                disabled={!file || loading}
-                style={{
-                  width: '100%', padding: '11px', borderRadius: '8px',
-                  background: !file || loading ? '#93c5fd' : 'var(--accent)',
-                  color: 'white', fontWeight: 600, fontSize: '14px',
-                  border: 'none', cursor: !file || loading ? 'not-allowed' : 'pointer',
-                  fontFamily: 'Geist, sans-serif'
-                }}
+                onClick={handleUploadResume} disabled={!file || loading}
+                className="w-full py-3 rounded-[12px] bg-[#6d28d9] disabled:bg-[#ededed] disabled:text-[#a3a3a3] text-white font-medium text-[15px] transition-all hover:bg-[#5b21b6]"
               >
-                {loading ? 'Parsing resume...' : 'Upload & Continue →'}
+                {loading ? 'Analyzing with AI...' : 'Continue'}
               </button>
-            </div>
+            </motion.div>
           )}
 
-          {/* ── Step 2 — Preferences ── */}
+          {/* STEP 2 */}
           {step === 2 && (
-            <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>
-                What are you targeting?
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
-                Help us personalize your dashboard
-              </p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <h2 className="text-xl font-semibold text-[#111111] mb-1">Target Preferences</h2>
+              <p className="text-[#737373] text-[14px] mb-6">What kind of roles are you looking for?</p>
 
-              {/* Extracted resume info */}
               {resumeData && (
-                <div style={{
-                  background: 'var(--accent-light)', border: '1px solid #bfdbfe',
-                  borderRadius: '10px', padding: '14px 16px', marginBottom: '20px'
-                }}>
-                  <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)', marginBottom: '8px' }}>
-                    EXTRACTED FROM RESUME
-                  </p>
+                <div className="mb-6 p-4 bg-[#f5f3ff] border border-[#ede9fe] rounded-[16px]">
+                  <p className="text-[11px] font-bold text-[#6d28d9] uppercase tracking-widest mb-2">Extracted Data</p>
                   {[
                     { label: 'Role', value: resumeData.current_role },
                     { label: 'Company', value: resumeData.current_company },
                     { label: 'Skills', value: resumeData.skills },
                   ].map(item => item.value && (
-                    <p key={item.label} style={{ fontSize: '13px', color: 'var(--text)', marginBottom: '3px' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>{item.label}:</span> {item.value}
-                    </p>
+                    <div key={item.label} className="text-[13px] text-[#111111] mb-1">
+                      <span className="text-[#737373]">{item.label}:</span> {item.value}
+                    </div>
                   ))}
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="flex flex-col gap-4 mb-6">
                 {[
-                  { label: 'Target Role', name: 'target_role', placeholder: 'Backend Engineer', type: 'input' },
-                  { label: 'Target Location', name: 'target_location', placeholder: 'Hyderabad / Remote', type: 'input' },
-                  { label: 'Expected CTC', name: 'expected_ctc', placeholder: '20-25 LPA', type: 'input' },
-                  { label: 'Notice Period', name: 'notice_period', placeholder: '60 days', type: 'input' },
-                  { label: 'Platforms', name: 'platforms', placeholder: 'linkedin, wellfound, instahyre', type: 'input' },
+                  { label: 'Target Role', name: 'target_role', ph: 'Backend Engineer' },
+                  { label: 'Location', name: 'target_location', ph: 'Remote' },
+                  { label: 'Expected Salary', name: 'expected_ctc', ph: '$120,000' },
                 ].map(field => (
                   <div key={field.name}>
-                    <label style={labelStyle}>{field.label}</label>
+                    <label className="block text-[13px] font-medium text-[#111111] mb-1.5">{field.label}</label>
                     <input
-                      type="text"
-                      name={field.name}
-                      value={prefs[field.name]}
-                      onChange={handlePrefsChange}
-                      placeholder={field.placeholder}
-                      style={inputStyle}
-                      onFocus={e => e.target.style.borderColor = '#2563eb'}
-                      onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                      type="text" name={field.name} value={prefs[field.name]} onChange={handlePrefsChange} placeholder={field.ph}
+                      className="w-full px-4 py-3 rounded-[12px] border border-[#ededed] bg-[#f7f7f7] text-[14px] text-[#111111] outline-none focus:bg-white focus:border-[#a3a3a3] transition-colors"
                     />
                   </div>
                 ))}
-
-                <div>
-                  <label style={labelStyle}>Work Type</label>
-                  <select
-                    name="work_type"
-                    value={prefs.work_type}
-                    onChange={handlePrefsChange}
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#2563eb'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
-                  >
-                    <option value="remote">Remote</option>
-                    <option value="hybrid">Hybrid</option>
-                    <option value="onsite">Onsite</option>
-                  </select>
-                </div>
               </div>
 
               <button
-                onClick={handleSavePrefs}
-                disabled={loading}
-                style={{
-                  width: '100%', padding: '11px', borderRadius: '8px',
-                  background: loading ? '#93c5fd' : 'var(--accent)',
-                  color: 'white', fontWeight: 600, fontSize: '14px',
-                  border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-                  fontFamily: 'Geist, sans-serif', marginTop: '20px'
-                }}
+                onClick={handleSavePrefs} disabled={loading}
+                className="w-full py-3 rounded-[12px] bg-[#6d28d9] disabled:bg-[#ededed] disabled:text-[#a3a3a3] text-white font-medium text-[15px] transition-all hover:bg-[#5b21b6]"
               >
-                {loading ? 'Saving...' : 'Save & Continue →'}
+                {loading ? 'Saving...' : 'Complete Setup'}
               </button>
-            </div>
+            </motion.div>
           )}
 
-          {/* ── Step 3 — Done ── */}
+          {/* STEP 3 */}
           {step === 3 && (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ fontSize: '56px', marginBottom: '16px' }}>🎉</div>
-              <h2 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-                You're all set!
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '32px' }}>
-                Your personalized hunt dashboard is ready
-              </p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-6">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-[#f0fdf4] text-[#16a34a] rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-semibold text-[#111111] mb-2">You're all set!</h2>
+              <p className="text-[#737373] text-[15px] mb-8">Your AI Career Analyst is ready to work.</p>
+              
               <button
                 onClick={() => navigate('/dashboard')}
-                style={{
-                  width: '100%', padding: '12px', borderRadius: '8px',
-                  background: 'var(--accent)', color: 'white', fontWeight: 600,
-                  fontSize: '15px', border: 'none', cursor: 'pointer',
-                  fontFamily: 'Geist, sans-serif'
-                }}
+                className="w-full py-3 rounded-[12px] bg-[#111111] text-white font-medium text-[15px] transition-all hover:bg-[#333333]"
               >
-                Go to Dashboard →
+                Go to Dashboard
               </button>
-            </div>
+            </motion.div>
           )}
-
-        </div>
+        </motion.div>
       </div>
     </div>
   )

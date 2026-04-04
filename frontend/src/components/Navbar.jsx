@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { LayoutDashboard, Trello, LineChart, LogOut, Crosshair } from 'lucide-react'
+import { LayoutDashboard, Trello, LineChart, LogOut, Orbit } from 'lucide-react'
 
 const links = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -23,8 +23,8 @@ function Navbar() {
         
         {/* Brand */}
         <div className="flex items-center gap-2 text-[17px] font-bold text-[#111111] tracking-tight">
-          <Crosshair className="w-5 h-5" />
-          HuntDesk
+          <Orbit className="w-5 h-5 text-[#6d28d9]" />
+          Loomo
         </div>
 
         {/* Links */}

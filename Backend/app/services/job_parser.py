@@ -1,38 +1,34 @@
-import google.generativeai as genai
-import os
 import json
-from dotenv import load_dotenv
-
-load_dotenv()
-
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-2.5-flash")
+import re
+from app.services.llm_gateway import chat_completion, parse_json_response
 
 def parse_job_text(text: str) -> dict:
-    prompt = f"""
-    Extract the following job details from the provided text. Return as JSON only, no extra text, no markdown. 
-    If you cannot find a specific field, return an empty string for that field ("").
-    
-    {{
-        "company": "Company Name",
-        "role": "Job Title",
-        "location": "City, State or Remote",
-        "salary_range": "Salary if mentioned, else empty string",
-        "platform": "Platform name if it sounds like LinkedIn, Wellfound, etc, else empty string",
-        "job_description": "A clean, concise 2-3 sentence summary of the job description"
-    }}
-    
-    Text Input:
-    {text}
-    """
+    messages = [
+        {"role": "system", "content": "You are a job description extraction assistant. Return only valid JSON."},
+        {"role": "user", "content": f"""
+            Extract the following job details from the provided text. Return as JSON only, no extra text, no markdown. 
+            If you cannot find a specific field, return an empty string for that field ("").
+            
+            {{
+                "company": "Company Name",
+                "role": "Job Title",
+                "location": "City, State or Remote",
+                "salary_range": "Salary if mentioned, else empty string",
+                "platform": "Platform name (LinkedIn, Wellfound, etc.)",
+                "job_description": "Clean, concise 2-3 sentence summary"
+            }}
+            
+            Text Input:
+            {text}
+        """}
+    ]
     
     try:
-        response = model.generate_content(prompt)
-        # Clean the response to ensure valid JSON (remove markdown ticks)
-        cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
-        return json.loads(cleaned_text)
+        response = chat_completion(messages)
+        return parse_json_response(response)
     except Exception as e:
-        # Fallback if Gemini fails
+        print(f"Error parsing job text: {str(e)}")
+        # Fallback if Gemini/LLM fails
         return {
             "company": "",
             "role": "",

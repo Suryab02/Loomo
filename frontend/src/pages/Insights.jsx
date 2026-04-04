@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts'
-import { BrainCircuit } from 'lucide-react'
-import { getStats, getPlatforms, getKeywords, askAgent } from '../services/api'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { getStats, getPlatforms, getKeywords } from '../services/api'
 import Navbar from '../components/Navbar'
+import StatCard from '../components/StatCard'
+import AgentChatBox from '../components/AgentChatBox'
 
 function Insights() {
   const [stats, setStats] = useState(null)
   const [platforms, setPlatforms] = useState([])
   const [keywords, setKeywords] = useState([])
   const [loading, setLoading] = useState(true)
-  const [chatQuery, setChatQuery] = useState('')
-  const [chatReply, setChatReply] = useState('')
-  const [chatting, setChatting] = useState(false)
 
   useEffect(() => { fetchData() }, [])
 
@@ -28,21 +26,6 @@ function Insights() {
       console.error(err)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleChat = async (e) => {
-    e.preventDefault()
-    if (!chatQuery) return;
-    setChatting(true);
-    setChatReply('');
-    try {
-      const res = await askAgent(chatQuery);
-      setChatReply(res.data.reply);
-    } catch(err) {
-      setChatReply("Error communicating with Agent.");
-    } finally {
-      setChatting(false);
     }
   }
 
@@ -71,46 +54,11 @@ function Insights() {
           <p className="text-[#737373] text-sm mt-1">Analytics on your job hunt performance</p>
         </div>
 
-        {/* Agentic Chat Box */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="mb-10 bg-[#f5f3ff] p-8 rounded-[20px] border border-[#ede9fe] shadow-sm"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <BrainCircuit className="w-5 h-5 text-[#6d28d9]" />
-            <h3 className="text-[15px] font-semibold text-[#6d28d9]">Chat with Data Analyst Agent</h3>
-          </div>
-          <form onSubmit={handleChat} className="flex gap-3">
-            <input 
-              value={chatQuery} onChange={e => setChatQuery(e.target.value)}
-              placeholder="Ask me: 'Why am I getting rejected?' or 'How many jobs did I apply to?'"
-              className="flex-1 px-4 py-3 bg-white rounded-[12px] border border-[#d8b4fe] text-sm text-[#111111] outline-none focus:border-[#a855f7] focus:ring-1 focus:ring-[#a855f7] transition-all placeholder:text-[#a3a3a3] shadow-sm"
-            />
-            <button 
-              type="submit" disabled={chatting || !chatQuery}
-              className="px-6 py-3 bg-[#6d28d9] hover:bg-[#5b21b6] text-white font-medium text-sm rounded-[12px] transition-colors disabled:opacity-50"
-            >
-              {chatting ? 'Thinking...' : 'Ask Analyst'}
-            </button>
-          </form>
-          {chatReply && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 p-5 bg-white rounded-[12px] border border-[#e5e7eb] text-sm text-[#111111] leading-relaxed shadow-sm">
-              <strong className="text-[#6d28d9]">Agent response:</strong> {chatReply}
-            </motion.div>
-          )}
-        </motion.div>
+        <AgentChatBox />
 
-        {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             {statCards.map((card, i) => (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                key={card.label} 
-                className="p-5 rounded-[16px] border border-[#ededed] bg-white flex flex-col gap-1 shadow-sm"
-              >
-                <div className="text-[#737373] text-[11px] font-semibold uppercase tracking-widest">{card.label}</div>
-                <div className="text-3xl font-medium tracking-tight text-[#111111]">{card.value}</div>
-              </motion.div>
+              <StatCard key={card.label} label={card.label} value={card.value} index={i} />
             ))}
         </div>
 

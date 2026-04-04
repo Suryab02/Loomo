@@ -5,9 +5,9 @@ from app.models.user import User
 from app.models.job import Job
 from app.utils.auth import get_current_user
 from pydantic import BaseModel
-import google.generativeai as genai
 import os
 import json
+from app.services.llm_gateway import chat_completion
 
 router = APIRouter(prefix="/insights", tags=["insights"])
 
@@ -18,50 +18,19 @@ def get_stats(
 ):
     jobs = db.query(Job).filter(Job.user_id == current_user.id).all()
     total = len(jobs)
-    applied = 0
-    screening = 0
-    interview = 0
-    offer = 0
-    rejected = 0
+    counts = {"applied": 0, "screening": 0, "interview": 0, "offer": 0, "rejected": 0}
 
     for job in jobs:
-        if job.status == "applied":
-            applied += 1
-        elif job.status == "screening":
-            screening += 1
-        elif job.status == "interview":
-            interview += 1
-        elif job.status == "offer":
-            offer += 1
-        elif job.status == "rejected":
-            rejected += 1
+        if job.status in counts:
+            counts[job.status] += 1
 
-    response_rate = round((screening + interview + offer) / applied * 100) if applied > 0 else 0
+    response_rate = round((counts["screening"] + counts["interview"] + counts["offer"]) / counts["applied"] * 100) if counts["applied"] > 0 else 0
 
     return {
         "total": total,
-        "applied": applied,
-        "screening": screening,
-        "interview": interview,
-        "offer": offer,
-        "rejected": rejected,
+        **counts,
         "response_rate": response_rate
     }
-
-
-@router.get("/platforms")
-def get_platform_stats(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    jobs = db.query(Job).filter(Job.user_id == current_user.id).all()
-    
-    platform_counts = {}
-    for job in jobs:
-        if job.platform:
-            platform_counts[job.platform] = platform_counts.get(job.platform, 0) + 1
-
-    return platform_counts
 
 
 @router.get("/keywords")
@@ -70,7 +39,6 @@ def get_keyword_gaps(
     current_user: User = Depends(get_current_user)
 ):
     jobs = db.query(Job).filter(Job.user_id == current_user.id).all()
-
     skill_counts = {}
     for job in jobs:
         if job.missing_skills:
@@ -80,7 +48,6 @@ def get_keyword_gaps(
                     skill_counts[skill] = skill_counts.get(skill, 0) + 1
 
     top_gaps = sorted(skill_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-
     return {"keyword_gaps": [{"skill": s, "count": c} for s, c in top_gaps]}
 
 class ChatQuery(BaseModel):
@@ -92,56 +59,117 @@ def chat_with_agent(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # AGENT TOOL 1
-    def get_application_stats() -> dict:
-        """Returns the user's job application statistics including total jobs, applied jobs, interviews, offers, and rejections."""
-        return get_stats(db, current_user)
+    # Tool definitions in standard OpenAI/LiteLLM format
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_application_stats",
+                "description": "Returns the user's job application statistics (total, applied, interviews, etc)."
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_skill_gaps",
+                "description": "Returns the top skill gaps based on the user's job applications."
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "add_application",
+                "description": "Adds a new job application to the database.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "company": {"type": "string"},
+                        "role": {"type": "string"},
+                        "status": {"type": "string", "description": "wishlist, applied, screening, interview, offer, rejected"},
+                        "location": {"type": "string"}
+                    },
+                    "required": ["company", "role"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "update_application_status",
+                "description": "Updates the status of an existing job application.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "company": {"type": "string"},
+                        "status": {"type": "string", "description": "wishlist, applied, screening, interview, offer, rejected"}
+                    },
+                    "required": ["company", "status"]
+                }
+            }
+        }
+    ]
 
-    # AGENT TOOL 2
-    def get_skill_gaps() -> dict:
-        """Returns the top skills the user is missing based on rejected or poorly matched jobs."""
-        return get_keyword_gaps(db, current_user)
-
-    # AGENT TOOL 3
-    def add_application(company: str, role: str, status: str = "wishlist", location: str = "") -> dict:
-        """Adds a new job application tracking record to the user's database."""
-        new_job = Job(
-            user_id=current_user.id,
-            company=company,
-            role=role,
-            status=status.lower(),
-            location=location
+    available_tools = {
+        "get_application_stats": lambda: get_stats(db, current_user),
+        "get_skill_gaps": lambda: get_keyword_gaps(db, current_user),
+        "add_application": lambda company, role, status="wishlist", location="": (
+            db.add(Job(user_id=current_user.id, company=company, role=role, status=status.lower(), location=location)),
+            db.commit(),
+            {"success": True, "message": f"Added {role} at {company}"}
+        )[2],
+        "update_application_status": lambda company, status: (
+            db.query(Job).filter(Job.user_id == current_user.id, Job.company.ilike(f"%{company}%")).first().update_status(status.lower(), db)
+            if db.query(Job).filter(Job.user_id == current_user.id, Job.company.ilike(f"%{company}%")).first()
+            else {"error": "Job not found"}
         )
-        db.add(new_job)
-        db.commit()
-        db.refresh(new_job)
-        return {"success": True, "message": f"Added {role} at {company} (Status: {status})"}
+    }
 
-    # AGENT TOOL 4
-    def update_application_status(company: str, status: str) -> dict:
-        """Updates the status of an existing job application. Status MUST be one of: wishlist, applied, screening, interview, offer, rejected."""
+    # Helper for the status update since the lambda got messy
+    def handle_status_update(company, status):
         valid_statuses = ["wishlist", "applied", "screening", "interview", "offer", "rejected"]
         if status.lower() not in valid_statuses:
-            return {"error": "Invalid status. Must be wishlist, applied, screening, interview, offer, or rejected."}
-            
+            return {"error": "Invalid status"}
         job = db.query(Job).filter(Job.user_id == current_user.id, Job.company.ilike(f"%{company}%")).first()
-        if not job:
-            return {"error": f"Could not find an application for company matching '{company}'."}
-            
-        old_status = job.status
+        if not job: return {"error": "Job not found"}
         job.status = status.lower()
         db.commit()
-        return {"success": True, "message": f"Updated {company} from {old_status} to {status}!"}
+        return {"success": True, "message": f"Updated {company} to {status}"}
 
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
-        tools=[get_application_stats, get_skill_gaps, add_application, update_application_status],
-        system_instruction="You are the DeskHunt AI Career Analyst. You have tools to read data OR write/modify database data. When the user asks you to add a job or update a status, use your database tools to execute the action immediately, then confirm to the user what you did. Keep all your conversational answers to 1-2 punchy and helpful sentences max."
-    )
+    available_tools["update_application_status"] = handle_status_update
+
+    messages = [
+        {"role": "system", "content": "You are the Loomo Career Analyst. Use tools to manage job data or explain stats. Keep responses concise (1-2 sentences)."},
+        {"role": "user", "content": request.query}
+    ]
+
+    # Handle agent logic (max 5 steps to avoid loops)
+    for _ in range(5):
+        response = chat_completion(messages, tools=tools)
+        message = response.choices[0].message
+        
+        # We need to append the model's message (which could contain tool calls)
+        # Convert to dict for safety
+        messages.append(message.model_dump(exclude_none=True))
+        
+        if not message.tool_calls:
+            return {"reply": message.content or "Execution complete."}
+        
+        for tool_call in message.tool_calls:
+            func_name = tool_call.function.name
+            func_args = json.loads(tool_call.function.arguments)
+            
+            # Execute the local tool
+            try:
+                tool_result = available_tools[func_name](**func_args)
+            except Exception as e:
+                tool_result = {"error": str(e)}
+            
+            # Add tool output to history
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": func_name,
+                "content": json.dumps(tool_result)
+            })
     
-    # We enable automatic function calling so the AI executes the Python functions above!
-    chat = model.start_chat(enable_automatic_function_calling=True)
-    response = chat.send_message(request.query)
-    
-    return {"reply": response.text}
+    return {"reply": "I processed your request but reached my limit. Check your dashboard!"}

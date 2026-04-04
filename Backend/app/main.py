@@ -10,7 +10,7 @@ from app.routes import insights
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="HuntDesk API",
+    title="Loomo API",
     description="AI powered job application tracker",
     version="1.0.0"
 )
@@ -31,7 +31,7 @@ app.include_router(insights.router)
 
 @app.get("/")
 def root():
-    return {"message": "HuntDesk API is running 🚀"}
+    return {"message": "Loomo API is running 🚀"}
 
 @app.get("/health")
 def health():

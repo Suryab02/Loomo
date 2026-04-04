@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Orbit, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
 import { login } from '../services/api'
 
-function Login() {
+export default function Login() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
@@ -21,117 +23,106 @@ function Login() {
       localStorage.setItem('token', res.data.access_token)
       navigate('/dashboard')
     } catch {
-      setError('Invalid email or password')
+      setError('Invalid email or password. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex' }}>
-
-      {/* Left panel */}
-      <div style={{
-        flex: 1, background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: '60px', color: 'white'
-      }} className="hidden md:flex">
-        <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '16px' }}>
-          HuntDesk 🎯
-        </div>
-        <div style={{ fontSize: '24px', fontWeight: 300, opacity: 0.9, lineHeight: 1.4, marginBottom: '40px' }}>
-          Your intelligent<br />job hunt dashboard
-        </div>
-        {[
-          'AI-powered resume matching',
-          'Kanban board for applications',
-          'Hunt analytics & insights',
-        ].map(f => (
-          <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', opacity: 0.85 }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'white' }} />
-            <span style={{ fontSize: '15px' }}>{f}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Right panel */}
-      <div style={{
-        width: '100%', maxWidth: '480px', display: 'flex',
-        flexDirection: 'column', justifyContent: 'center', padding: '48px'
-      }}>
-        <div style={{ marginBottom: '40px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
-            Welcome back
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>
-            Sign in to your HuntDesk account
-          </p>
-        </div>
-
-        {error && (
-          <div style={{
-            background: 'var(--danger-light)', border: '1px solid #fecaca',
-            color: 'var(--danger)', borderRadius: '10px', padding: '12px 16px',
-            fontSize: '14px', marginBottom: '20px'
-          }}>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          {[
-            { label: 'Email address', name: 'email', type: 'email', placeholder: 'surya@example.com' },
-            { label: 'Password', name: 'password', type: 'password', placeholder: '••••••••' },
-          ].map(field => (
-            <div key={field.name} style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: 'var(--text)', marginBottom: '6px' }}>
-                {field.label}
-              </label>
-              <input
-                type={field.type}
-                name={field.name}
-                value={form[field.name]}
-                onChange={handleChange}
-                placeholder={field.placeholder}
-                required
-                style={{
-                  width: '100%', padding: '11px 14px', borderRadius: '10px',
-                  border: '1.5px solid var(--border)', fontSize: '15px',
-                  outline: 'none', transition: 'border-color 0.15s',
-                  background: 'white', color: 'var(--text)',
-                  fontFamily: 'Geist, sans-serif'
-                }}
-                onFocus={e => e.target.style.borderColor = '#2563eb'}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'}
-              />
-            </div>
-          ))}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%', padding: '12px', borderRadius: '10px',
-              background: loading ? '#93c5fd' : 'var(--accent)',
-              color: 'white', fontWeight: 600, fontSize: '15px',
-              border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'background 0.15s', fontFamily: 'Geist, sans-serif',
-              marginTop: '4px'
-            }}
+    <div className="min-h-screen bg-[#fcfcfc] flex flex-col justify-center items-center p-6 font-sans">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-[420px]"
+      >
+        {/* Logo & Header */}
+        <div className="flex flex-col items-center mb-10">
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-14 h-14 bg-[#f5f3ff] border border-[#ede9fe] rounded-[20px] flex items-center justify-center mb-6 shadow-sm"
           >
-            {loading ? 'Signing in...' : 'Sign In →'}
-          </button>
-        </form>
+            <Orbit className="w-7 h-7 text-[#6d28d9]" />
+          </motion.div>
+          <h1 className="text-3xl font-bold tracking-tight text-[#111111]">Welcome back</h1>
+          <p className="text-[#737373] mt-2 text-[15px]">Sign in to your Loomo workspace</p>
+        </div>
 
-        <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: 'var(--text-muted)' }}>
-          Don't have an account?{' '}
-          <Link to="/register" style={{ color: 'var(--accent)', fontWeight: 500, textDecoration: 'none' }}>
-            Create one free
+        {/* Login Form Card */}
+        <div className="bg-white border border-[#ededed] rounded-[24px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-6 p-4 bg-[#fff1f2] border border-[#fecaca] text-[#e11d48] text-sm rounded-[14px]"
+            >
+              {error}
+            </motion.div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-[13px] font-semibold text-[#111111] mb-2 px-1">Email Address</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a3a3a3] group-focus-within:text-[#6d28d9] transition-colors" />
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="name@company.com"
+                  required
+                  className="w-full pl-11 pr-4 py-3 bg-[#f9f9f9] border border-[#efefef] rounded-[14px] text-[15px] text-[#111111] outline-none focus:bg-white focus:border-[#6d28d9] focus:ring-4 focus:ring-[#6d28d9]/5 transition-all placeholder:text-[#a3a3a3]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2 px-1">
+                <label className="text-[13px] font-semibold text-[#111111]">Password</label>
+                <button type="button" className="text-[12px] font-medium text-[#6d28d9] hover:underline">Forgot password?</button>
+              </div>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a3a3a3] group-focus-within:text-[#6d28d9] transition-colors" />
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  className="w-full pl-11 pr-4 py-3 bg-[#f9f9f9] border border-[#efefef] rounded-[14px] text-[15px] text-[#111111] outline-none focus:bg-white focus:border-[#6d28d9] focus:ring-4 focus:ring-[#6d28d9]/5 transition-all placeholder:text-[#a3a3a3]"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 py-3.5 bg-[#111111] hover:bg-[#222222] disabled:bg-[#ededed] text-white rounded-[14px] font-semibold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md shadow-black/5"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-8 text-center text-[14px] text-[#737373]">
+          New to Loomo?{' '}
+          <Link to="/register" className="font-semibold text-[#6d28d9] hover:underline decoration-2 underline-offset-4">
+            Create an account
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   )
 }
-
-export default Login

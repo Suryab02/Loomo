@@ -65,7 +65,7 @@ function Kanban() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      <div className="p-8 max-w-[1400px] mx-auto">
+      <div className="p-8 max-w-[1100px] mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-semibold tracking-tight text-[#111111]">Board</h1>
           <p className="text-[#737373] text-sm mt-1">Drag and drop to update application status</p>

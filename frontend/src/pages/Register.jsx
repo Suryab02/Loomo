@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Orbit, User, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
 import { register } from '../services/api'
 
-function Register() {
+export default function Register() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '', full_name: '' })
   const [error, setError] = useState('')
@@ -21,98 +23,119 @@ function Register() {
       localStorage.setItem('token', res.data.access_token)
       navigate('/onboarding')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed')
+      setError(err.response?.data?.detail || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: '440px' }}>
-
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text)' }}>
-            HuntDesk 🎯
-          </div>
-          <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '15px' }}>
-            Start tracking your job hunt
-          </p>
+    <div className="min-h-screen bg-[#fcfcfc] flex flex-col justify-center items-center p-6 font-sans">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-[420px]"
+      >
+        {/* Logo & Header */}
+        <div className="flex flex-col items-center mb-10">
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-14 h-14 bg-[#f5f3ff] border border-[#ede9fe] rounded-[20px] flex items-center justify-center mb-6 shadow-sm"
+          >
+            <Orbit className="w-7 h-7 text-[#6d28d9]" />
+          </motion.div>
+          <h1 className="text-3xl font-bold tracking-tight text-[#111111]">Create account</h1>
+          <p className="text-[#737373] mt-2 text-[15px]">Start your Loomo-powered career journey</p>
         </div>
 
-        <div style={{
-          background: 'white', borderRadius: '16px', padding: '36px',
-          boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)'
-        }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '24px', color: 'var(--text)' }}>
-            Create your account
-          </h2>
-
+        {/* Register Form Card */}
+        <div className="bg-white border border-[#ededed] rounded-[24px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           {error && (
-            <div style={{
-              background: 'var(--danger-light)', border: '1px solid #fecaca',
-              color: 'var(--danger)', borderRadius: '10px', padding: '12px 16px',
-              fontSize: '14px', marginBottom: '20px'
-            }}>
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-6 p-4 bg-[#fff1f2] border border-[#fecaca] text-[#e11d48] text-sm rounded-[14px]"
+            >
               {error}
-            </div>
+            </motion.div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            {[
-              { label: 'Full Name', name: 'full_name', type: 'text', placeholder: 'Surya Prabhas' },
-              { label: 'Email address', name: 'email', type: 'email', placeholder: 'surya@example.com' },
-              { label: 'Password', name: 'password', type: 'password', placeholder: '••••••••' },
-            ].map(field => (
-              <div key={field.name} style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text)', marginBottom: '6px' }}>
-                  {field.label}
-                </label>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-[13px] font-semibold text-[#111111] mb-2 px-1">Full Name</label>
+              <div className="relative group">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a3a3a3] group-focus-within:text-[#6d28d9] transition-colors" />
                 <input
-                  type={field.type}
-                  name={field.name}
-                  value={form[field.name]}
+                  type="text"
+                  name="full_name"
+                  value={form.full_name}
                   onChange={handleChange}
-                  placeholder={field.placeholder}
+                  placeholder="Surya Prabhas"
                   required
-                  style={{
-                    width: '100%', padding: '10px 13px', borderRadius: '8px',
-                    border: '1.5px solid var(--border)', fontSize: '14px',
-                    outline: 'none', background: 'white', color: 'var(--text)',
-                    fontFamily: 'Geist, sans-serif', transition: 'border-color 0.15s'
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#2563eb'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                  className="w-full pl-11 pr-4 py-3 bg-[#f9f9f9] border border-[#efefef] rounded-[14px] text-[15px] text-[#111111] outline-none focus:bg-white focus:border-[#6d28d9] focus:ring-4 focus:ring-[#6d28d9]/5 transition-all placeholder:text-[#a3a3a3]"
                 />
               </div>
-            ))}
+            </div>
+
+            <div>
+              <label className="block text-[13px] font-semibold text-[#111111] mb-2 px-1">Email Address</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a3a3a3] group-focus-within:text-[#6d28d9] transition-colors" />
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="name@company.com"
+                  required
+                  className="w-full pl-11 pr-4 py-3 bg-[#f9f9f9] border border-[#efefef] rounded-[14px] text-[15px] text-[#111111] outline-none focus:bg-white focus:border-[#6d28d9] focus:ring-4 focus:ring-[#6d28d9]/5 transition-all placeholder:text-[#a3a3a3]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[13px] font-semibold text-[#111111] mb-2 px-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a3a3a3] group-focus-within:text-[#6d28d9] transition-colors" />
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  className="w-full pl-11 pr-4 py-3 bg-[#f9f9f9] border border-[#efefef] rounded-[14px] text-[15px] text-[#111111] outline-none focus:bg-white focus:border-[#6d28d9] focus:ring-4 focus:ring-[#6d28d9]/5 transition-all placeholder:text-[#a3a3a3]"
+                />
+              </div>
+            </div>
 
             <button
               type="submit"
               disabled={loading}
-              style={{
-                width: '100%', padding: '11px', borderRadius: '8px',
-                background: loading ? '#93c5fd' : 'var(--accent)',
-                color: 'white', fontWeight: 600, fontSize: '14px',
-                border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: 'Geist, sans-serif', marginTop: '4px'
-              }}
+              className="w-full mt-2 py-3.5 bg-[#111111] hover:bg-[#222222] disabled:bg-[#ededed] text-white rounded-[14px] font-semibold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md shadow-black/5"
             >
-              {loading ? 'Creating account...' : 'Create Account →'}
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Create Account
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
-
-          <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px', color: 'var(--text-muted)' }}>
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 500, textDecoration: 'none' }}>
-              Sign in
-            </Link>
-          </p>
         </div>
-      </div>
+
+        {/* Footer */}
+        <p className="mt-8 text-center text-[14px] text-[#737373]">
+          Already have an account?{' '}
+          <Link to="/login" className="font-semibold text-[#6d28d9] hover:underline decoration-2 underline-offset-4">
+            Sign in
+          </Link>
+        </p>
+      </motion.div>
     </div>
   )
 }
-
-export default Register

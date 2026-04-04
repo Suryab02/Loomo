@@ -1,7 +1,16 @@
-import { motion } from 'framer-motion'
-import { Trash2, FileText, Loader2 } from 'lucide-react'
+import { motion } from 'framer-motion';
+import { Trash2, FileText, Loader2 } from 'lucide-react';
+import { Job } from '../types';
 
-export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, onOpen }) {
+interface JobRowProps {
+  job: Job;
+  onDelete: (id: number) => void;
+  onGenerateLetter: (id: number) => void;
+  isGenerating?: boolean;
+  onOpen?: (job: Job) => void;
+}
+
+export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, onOpen }: JobRowProps) {
   return (
     <motion.div 
       layout
@@ -12,7 +21,7 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, 
       onClick={() => onOpen?.(job)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(job) } }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(job); } }}
     >
       <div className="flex gap-4 items-center">
         <div className="w-12 h-12 rounded-[12px] bg-[#f7f7f7] border border-[#ededed] flex items-center justify-center font-semibold text-[#111111] text-lg">
@@ -25,7 +34,7 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, 
       </div>
       
       <div className="flex items-center gap-3">
-        {job.match_score && (
+        {job.match_score !== undefined && (
           <div className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
             job.match_score >= 70 ? 'bg-[#f0fdf4] text-[#059669]' : 
             job.match_score >= 40 ? 'bg-[#fffbeb] text-[#d97706]' : 'bg-[#fef2f2] text-[#dc2626]'
@@ -39,7 +48,7 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, 
         </div>
 
         <button
-          onClick={(e) => { e.stopPropagation(); onGenerateLetter(job.id) }}
+          onClick={(e) => { e.stopPropagation(); onGenerateLetter(job.id); }}
           disabled={isGenerating}
           className="p-1.5 text-[#a3a3a3] hover:text-[#6d28d9] hover:bg-[#f5f3ff] rounded-md transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
           title="Draft Cover Letter"
@@ -48,7 +57,7 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, 
         </button>
 
         <button
-          onClick={(e) => { e.stopPropagation(); onDelete(job.id) }}
+          onClick={(e) => { e.stopPropagation(); onDelete(job.id); }}
           className="p-1.5 text-[#a3a3a3] hover:text-[#dc2626] hover:bg-[#fef2f2] rounded-md transition-all opacity-0 group-hover:opacity-100"
           title="Delete"
         >
@@ -56,5 +65,5 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, 
         </button>
       </div>
     </motion.div>
-  )
+  );
 }

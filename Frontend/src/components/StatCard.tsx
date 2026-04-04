@@ -1,6 +1,12 @@
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
 
-export default function StatCard({ label, value, index = 0 }) {
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  index?: number;
+}
+
+export default function StatCard({ label, value, index = 0 }: StatCardProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} 
@@ -11,5 +17,5 @@ export default function StatCard({ label, value, index = 0 }) {
       <div className="text-[#737373] text-[11px] font-semibold uppercase tracking-widest">{label}</div>
       <div className="text-3xl font-medium tracking-tight text-[#111111]">{value}</div>
     </motion.div>
-  )
+  );
 }

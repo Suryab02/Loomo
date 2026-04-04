@@ -1,71 +1,81 @@
-import { useState, useEffect, useMemo } from 'react'
-import { getJobs, updateJobStatus, deleteJob } from '../services/api'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
-import { motion } from 'framer-motion'
-import { Loader2, Search } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import JobCard from '../components/JobCard'
+import { useState, useEffect, useMemo } from 'react';
+import { getJobs, updateJobStatus, deleteJob } from '../services/api';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { motion } from 'framer-motion';
+import { Loader2, Search } from 'lucide-react';
+import Navbar from '../components/Navbar';
+import JobCard from '../components/JobCard';
+import { Job, JobStatus } from '../types';
 
-const COLUMNS = [
+interface Column {
+  id: JobStatus;
+  label: string;
+  color: string;
+  bg: string;
+}
+
+const COLUMNS: Column[] = [
   { id: 'wishlist',  label: 'Wishlist',  color: '#737373', bg: '#f5f5f5' },
   { id: 'applied',   label: 'Applied',   color: '#2563eb', bg: '#eff6ff' },
   { id: 'screening', label: 'Screening', color: '#7c3aed', bg: '#f5f3ff' },
   { id: 'interview', label: 'Interview', color: '#ea580c', bg: '#fff7ed' },
   { id: 'offer',     label: 'Offer',     color: '#16a34a', bg: '#f0fdf4' },
   { id: 'rejected',  label: 'Rejected',  color: '#dc2626', bg: '#fef2f2' },
-]
+];
 
 function Kanban() {
-  const [jobs, setJobs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filterQ, setFilterQ] = useState('')
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterQ, setFilterQ] = useState('');
 
-  useEffect(() => { fetchJobs() }, [])
+  useEffect(() => { fetchJobs(); }, []);
 
   const fetchJobs = async () => {
     try {
-      const res = await getJobs({ per_page: 500, sort: 'created_at', order: 'desc' })
-      const jd = res.data
-      setJobs(Array.isArray(jd) ? jd : (jd.items || []))
+      const res = await getJobs({ per_page: 500, sort: 'created_at', order: 'desc' });
+      const jd = res.data;
+      setJobs(Array.isArray(jd) ? jd : (jd.items || []));
     } catch (err) {
-      console.error(err)
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const filteredJobs = useMemo(() => {
-    const q = filterQ.trim().toLowerCase()
-    if (!q) return jobs
+    const q = filterQ.trim().toLowerCase();
+    if (!q) return jobs;
     return jobs.filter(
       (j) =>
         (j.company || '').toLowerCase().includes(q) ||
         (j.role || '').toLowerCase().includes(q),
-    )
-  }, [jobs, filterQ])
+    );
+  }, [jobs, filterQ]);
 
-  const getJobsByStatus = (status) => filteredJobs.filter((j) => j.status === status)
+  const getJobsByStatus = (status: JobStatus) => filteredJobs.filter((j) => j.status === status);
 
-  const handleDragEnd = async (result) => {
-    if (!result.destination) return
-    const jobId = parseInt(result.draggableId, 10)
-    const newStatus = result.destination.droppableId
-    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j)))
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+    const jobId = parseInt(result.draggableId, 10);
+    const newStatus = result.destination.droppableId as JobStatus;
+    
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j)));
+    
     try {
-      await updateJobStatus(jobId, newStatus)
+      await updateJobStatus(jobId, newStatus);
     } catch {
-      fetchJobs()
+      fetchJobs();
     }
-  }
+  };
 
-  const handleDelete = async (jobId) => {
+  const handleDelete = async (jobId: number) => {
     try {
-      await deleteJob(jobId)
-      setJobs((prev) => prev.filter((j) => j.id !== jobId))
+      await deleteJob(jobId);
+      setJobs((prev) => prev.filter((j) => j.id !== jobId));
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  };
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
@@ -88,7 +98,7 @@ function Kanban() {
         </button>
       </motion.div>
     </div>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -163,7 +173,7 @@ function Kanban() {
         </DragDropContext>
       </div>
     </div>
-  )
+  );
 }
 
-export default Kanban
+export default Kanban;

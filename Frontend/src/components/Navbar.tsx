@@ -1,21 +1,27 @@
-import { useNavigate, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { LayoutDashboard, Trello, LineChart, LogOut, Orbit } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { LayoutDashboard, Trello, LineChart, LogOut, Orbit, LucideIcon } from 'lucide-react';
 
-const links = [
+interface NavLink {
+  path: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+const links: NavLink[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/kanban', label: 'Kanban', icon: Trello },
   { path: '/insights', label: 'Insights', icon: LineChart },
-]
+];
 
 function Navbar() {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    navigate('/login')
-  }
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-[#ededed]">
@@ -30,8 +36,8 @@ function Navbar() {
         {/* Links */}
         <div className="flex items-center gap-1">
           {links.map(link => {
-            const isActive = location.pathname === link.path
-            const Icon = link.icon
+            const isActive = location.pathname === link.path;
+            const Icon = link.icon;
             
             return (
               <button
@@ -51,7 +57,7 @@ function Navbar() {
                 <Icon className="w-4 h-4" />
                 {link.label}
               </button>
-            )
+            );
           })}
         </div>
 
@@ -65,7 +71,7 @@ function Navbar() {
 
       </div>
     </nav>
-  )
+  );
 }
 
-export default Navbar
+export default Navbar;

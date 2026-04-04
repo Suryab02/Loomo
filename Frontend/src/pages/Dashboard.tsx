@@ -1,54 +1,45 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Upload, Target, FileText, Check, Copy, X, Loader2, Sparkles, Search, SlidersHorizontal } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Upload, Target, FileText, Check, Copy, X, Loader2, Sparkles, Search, SlidersHorizontal } from 'lucide-react';
 import {
-  getStats,
-  getJobs,
-  getReminders,
-  addJob,
-  syncGmail,
-  parseJobText,
-  uploadResume,
-  deleteJob,
-  generateCoverLetter,
-  generateFollowUp,
-  snoozeReminder,
-  markReminderContacted,
-} from '../services/api'
-import Navbar from '../components/Navbar'
-import StatCard from '../components/StatCard'
-import JobRow from '../components/JobRow'
-import AddJobModal from '../components/AddJobModal'
-import JobDetailPanel from '../components/JobDetailPanel'
-import { DashboardSkeleton } from '../components/PageSkeleton'
-import { useToast } from '../context/ToastContext'
+  useGetStatsQuery,
+  useGetJobsQuery,
+  useGetRemindersQuery,
+  useAddJobMutation,
+  useDeleteJobMutation,
+  useSyncGmailMutation,
+  useGenerateCoverLetterMutation,
+  useGenerateFollowUpMutation,
+  // These might need addition to apiSlice or used from api directly for specialized cases
+} from '../store/apiSlice';
+import { parseJobText, uploadResume, snoozeReminder, markReminderContacted } from '../services/api';
+import Navbar from '../components/Navbar';
+import StatCard from '../components/StatCard';
+import JobRow from '../components/JobRow';
+import AddJobModal from '../components/AddJobModal';
+import JobDetailPanel from '../components/JobDetailPanel';
+import { DashboardSkeleton } from '../components/PageSkeleton';
+import { useToast } from '../context/ToastContext';
+import type { Job, JobStatus } from '../types';
+
+interface ListParams {
+  q: string;
+  status: JobStatus | '';
+  platform: string;
+  sort: string;
+  order: 'asc' | 'desc';
+  page: number;
+  per_page: number;
+}
 
 function Dashboard() {
-  const { toast } = useToast()
-  const [stats, setStats] = useState(null)
-  const [jobs, setJobs] = useState([])
-  const [jobsTotal, setJobsTotal] = useState(0)
-  const [reminders, setReminders] = useState([])
-  const [foundJobs, setFoundJobs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [syncingGmail, setSyncingGmail] = useState(false)
-  const [showAddJob, setShowAddJob] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [parsing, setParsing] = useState(false)
-  const [pasteText, setPasteText] = useState('')
-  const [uploadingResume, setUploadingResume] = useState(false)
-  const fileInputRef = useRef(null)
-  const [newJob, setNewJob] = useState({
-    company: '', role: '', job_description: '', platform: '', location: '', salary_range: '', job_url: '',
-  })
-  const [generatedLetter, setGeneratedLetter] = useState(null)
-  const [letterTitle, setLetterTitle] = useState('Draft')
-  const [generatingLetter, setGeneratingLetter] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [selectedJob, setSelectedJob] = useState(null)
-  const [searchInput, setSearchInput] = useState('')
-  const searchDebounce = useRef(null)
-  const [listParams, setListParams] = useState({
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Filters & Pagination State
+  const [searchInput, setSearchInput] = useState('');
+  const [listParams, setListParams] = useState<ListParams>({
     q: '',
     status: '',
     platform: '',
@@ -56,210 +47,193 @@ function Dashboard() {
     order: 'desc',
     page: 1,
     per_page: 50,
-  })
+  });
 
-  const fetchData = useCallback(async () => {
-    try {
-      const params = { ...listParams }
-      if (!params.status) delete params.status
-      if (!params.platform) delete params.platform
-      if (!params.q) delete params.q
-      const [statsRes, jobsRes, remindersRes] = await Promise.all([
-        getStats(),
-        getJobs(params),
-        getReminders(),
-      ])
-      setStats(statsRes.data)
-      const jd = jobsRes.data
-      const items = Array.isArray(jd) ? jd : (jd.items || [])
-      const total = Array.isArray(jd) ? jd.length : (jd.total ?? items.length)
-      setJobs(items)
-      setJobsTotal(total)
-      setReminders(remindersRes.data)
-    } catch (err) {
-      console.error(err)
-      toast('Could not load dashboard', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }, [listParams, toast])
+  // RTK Query hooks
+  const { data: stats, isLoading: statsLoading } = useGetStatsQuery();
+  const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useGetJobsQuery(listParams);
+  const { data: reminders = [], isLoading: remindersLoading } = useGetRemindersQuery();
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  // Mutations
+  const [addJob] = useAddJobMutation();
+  const [deleteJob] = useDeleteJobMutation();
+  const [syncGmail, { isLoading: syncingGmail }] = useSyncGmailMutation();
+  const [generateCoverLetter, { isLoading: generatingLetter }] = useGenerateCoverLetterMutation();
+  const [generateFollowUp] = useGenerateFollowUpMutation();
+
+  // Local UI State
+  const [foundJobs, setFoundJobs] = useState<Partial<Job>[]>([]);
+  const [showAddJob, setShowAddJob] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [newJob, setNewJob] = useState<Partial<Job>>({
+    company: '', role: '', job_description: '', platform: '', location: '', salary_range: '', job_url: '',
+  });
+  const [generatedLetter, setGeneratedLetter] = useState<string | null>(null);
+  const [letterTitle, setLetterTitle] = useState('Draft');
+  const [copied, setCopied] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   useEffect(() => {
-    if (searchDebounce.current) clearTimeout(searchDebounce.current)
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
     searchDebounce.current = setTimeout(() => {
-      setListParams((p) => ({ ...p, q: searchInput.trim(), page: 1 }))
-    }, 320)
-    return () => clearTimeout(searchDebounce.current)
-  }, [searchInput])
+      setListParams((p) => ({ ...p, q: searchInput.trim(), page: 1 }));
+    }, 320);
+    return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); }
+  }, [searchInput]);
 
   const handleParseJob = async () => {
-    if (!pasteText) return
-    setParsing(true)
+    if (!pasteText) return;
+    setParsing(true);
     try {
-      const res = await parseJobText({ text: pasteText })
-      setNewJob((prev) => ({ ...prev, ...res.data, job_description: pasteText }))
-      setPasteText('')
-      toast('Job details extracted', 'success')
+      const res = await parseJobText({ text: pasteText });
+      setNewJob((prev) => ({ ...prev, ...res.data, job_description: pasteText }));
+      setPasteText('');
+      toast('Job details extracted', 'success');
     } catch (err) {
-      console.error(err)
-      toast('Failed to parse the job text.', 'error')
+      console.error(err);
+      toast('Failed to parse the job text.', 'error');
     } finally {
-      setParsing(false)
+      setParsing(false);
     }
-  }
+  };
 
   const handleAddJob = async () => {
-    setAdding(true)
+    setAdding(true);
     try {
-      await addJob(newJob)
-      setShowAddJob(false)
-      setNewJob({ company: '', role: '', job_description: '', platform: '', location: '', salary_range: '', job_url: '' })
-      toast('Application saved', 'success')
-      fetchData()
-    } catch (err) {
-      console.error(err)
-      const d = err.response?.data?.detail
-      toast(typeof d === 'string' ? d : 'Could not save application', 'error')
+      await addJob(newJob).unwrap();
+      setShowAddJob(false);
+      setNewJob({ company: '', role: '', job_description: '', platform: '', location: '', salary_range: '', job_url: '' });
+      toast('Application saved', 'success');
+    } catch (err: any) {
+      console.error(err);
+      const d = err.data?.detail || err.message;
+      toast(typeof d === 'string' ? d : 'Could not save application', 'error');
     } finally {
-      setAdding(false)
+      setAdding(false);
     }
-  }
+  };
 
-  const handleResumeReupload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    setUploadingResume(true)
+  const handleResumeReupload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingResume(true);
     try {
-      await uploadResume(file)
-      toast('Resume processed — skills updated.', 'success')
+      await uploadResume(file);
+      toast('Resume processed — skills updated.', 'success');
     } catch (err) {
-      console.error(err)
-      toast('Failed to parse resume.', 'error')
+      console.error(err);
+      toast('Failed to parse resume.', 'error');
     } finally {
-      setUploadingResume(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      setUploadingResume(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  }
+  };
 
-  const handleDeleteJob = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this application?')) return
+  const handleDeleteJob = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this application?')) return;
     try {
-      await deleteJob(id)
-      toast('Application removed', 'success')
-      fetchData()
+      await deleteJob(id).unwrap();
+      toast('Application removed', 'success');
     } catch (err) {
-      console.error(err)
-      toast('Failed to delete application.', 'error')
+      console.error(err);
+      toast('Failed to delete application.', 'error');
     }
-  }
+  };
 
-  const handleGenerateLetter = async (id) => {
-    setGeneratingLetter(true)
-    setLetterTitle('Draft Cover Letter')
+  const handleGenerateLetter = async (id: number) => {
+    setLetterTitle('Draft Cover Letter');
     try {
-      const res = await generateCoverLetter(id)
-      if (res.data.error) {
-        toast(res.data.error, 'error')
-        return
-      }
-      setGeneratedLetter(res.data.cover_letter)
+      const res = await generateCoverLetter(id).unwrap();
+      setGeneratedLetter(res.cover_letter);
     } catch (err) {
-      console.error(err)
-      toast('Failed to generate cover letter. Ensure the job has a description.', 'error')
-    } finally {
-      setGeneratingLetter(false)
+      console.error(err);
+      toast('Failed to generate cover letter. Ensure the job has a description.', 'error');
     }
-  }
+  };
 
-  const handleGenerateFollowUp = async (id) => {
-    setGeneratingLetter(true)
-    setLetterTitle('Follow-up email')
+  const handleGenerateFollowUp = async (id: number) => {
+    setLetterTitle('Follow-up email');
     try {
-      const res = await generateFollowUp(id)
-      if (res.data.error) {
-        toast(res.data.error, 'error')
-        return
-      }
-      setGeneratedLetter(res.data.follow_up_email)
+      const res = await generateFollowUp(id).unwrap();
+      setGeneratedLetter(res.follow_up_email);
     } catch (err) {
-      console.error(err)
-      toast('Failed to generate follow-up email.', 'error')
-    } finally {
-      setGeneratingLetter(false)
+      console.error(err);
+      toast('Failed to generate follow-up email.', 'error');
     }
-  }
+  };
 
   const handleSyncGmail = async () => {
-    setSyncingGmail(true)
     try {
-      const res = await syncGmail()
-      if (res.data.error) {
-        toast(res.data.error, 'error')
+      const res = await syncGmail().unwrap();
+      if (res.error) {
+        toast(res.error, 'error');
       } else {
-        setFoundJobs(res.data.jobs_found || [])
-        toast(`Found ${(res.data.jobs_found || []).length} message(s). Review and import.`, 'success')
+        setFoundJobs(res.jobs_found || []);
+        toast(`Found ${(res.jobs_found || []).length} message(s). Review and import.`, 'success');
       }
     } catch (err) {
-      console.error(err)
-      toast('Gmail sync failed', 'error')
-    } finally {
-      setSyncingGmail(false)
+      console.error(err);
+      toast('Gmail sync failed', 'error');
     }
-  }
+  };
 
-  const handleAcceptGmailJob = async (jobIndex) => {
-    const job = foundJobs[jobIndex]
+  const handleAcceptGmailJob = async (jobIndex: number) => {
+    const job = foundJobs[jobIndex];
     try {
-      await addJob(job)
-      setFoundJobs((prev) => prev.filter((_, i) => i !== jobIndex))
-      toast('Imported from Gmail', 'success')
-      fetchData()
-    } catch (err) {
-      const d = err.response?.data?.detail
-      toast(typeof d === 'string' ? d : 'Could not import job', 'error')
+      await addJob(job).unwrap();
+      setFoundJobs((prev) => prev.filter((_, i) => i !== jobIndex));
+      toast('Imported from Gmail', 'success');
+    } catch (err: any) {
+      const d = err.data?.detail || err.message;
+      toast(typeof d === 'string' ? d : 'Could not import job', 'error');
     }
-  }
+  };
 
-  const handleSnooze = async (jobId) => {
+  const handleSnooze = async (jobId: number) => {
     try {
-      await snoozeReminder(jobId, 7)
-      toast('Reminder snoozed 7 days', 'success')
-      fetchData()
+      await snoozeReminder(jobId, 7);
+      toast('Reminder snoozed 7 days', 'success');
+      // Note: Re-adding manual refetch for non-RTK query calls if needed, 
+      // but ideally this should also be a mutation in apiSlice.
+      refetchJobs(); 
     } catch (e) {
-      toast('Could not snooze', 'error')
+      toast('Could not snooze', 'error');
     }
-  }
+  };
 
-  const handleContacted = async (jobId) => {
+  const handleContacted = async (jobId: number) => {
     try {
-      await markReminderContacted(jobId)
-      toast('Marked as contacted', 'success')
-      fetchData()
+      await markReminderContacted(jobId);
+      toast('Marked as contacted', 'success');
+      refetchJobs();
     } catch (e) {
-      toast('Could not update', 'error')
+      toast('Could not update', 'error');
     }
-  }
+  };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedLetter)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+    if (generatedLetter) {
+        navigator.clipboard.writeText(generatedLetter);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
-  if (loading) return <DashboardSkeleton />
+  if (statsLoading || jobsLoading) return <DashboardSkeleton />;
 
   const statCards = [
     { label: 'Applied', value: stats?.applied ?? 0 },
     { label: 'Interviews', value: stats?.interview ?? 0 },
     { label: 'Offers', value: stats?.offer ?? 0 },
     { label: 'Response Rate', value: `${stats?.response_rate ?? 0}%` },
-  ]
+  ];
 
-  const totalPages = Math.max(1, Math.ceil(jobsTotal / listParams.per_page))
+  const jobs = jobsData?.items || [];
+  const jobsTotal = jobsData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(jobsTotal / listParams.per_page));
 
   return (
     <div className="min-h-screen bg-white">
@@ -276,7 +250,7 @@ function Dashboard() {
             <input type="file" accept=".pdf" ref={fileInputRef} onChange={handleResumeReupload} className="hidden" />
             <button
               type="button"
-              onClick={() => fileInputRef.current.click()}
+              onClick={() => fileInputRef.current?.click()}
               disabled={uploadingResume}
               className="group flex items-center gap-2 px-5 py-2.5 bg-[#f7f7f7] hover:bg-[#ededed] text-[#111111] text-sm font-semibold rounded-full border border-[#ededed] transition-all disabled:opacity-50"
             >
@@ -413,7 +387,7 @@ function Dashboard() {
                 <SlidersHorizontal className="w-4 h-4 text-[#a3a3a3] hidden sm:block" />
                 <select
                   value={listParams.status}
-                  onChange={(e) => setListParams((p) => ({ ...p, status: e.target.value, page: 1 }))}
+                  onChange={(e) => setListParams((p) => ({ ...p, status: e.target.value as JobStatus, page: 1 }))}
                   className="text-sm border border-[#ededed] rounded-[12px] px-3 py-2 bg-white capitalize"
                 >
                   <option value="">All statuses</option>
@@ -439,7 +413,7 @@ function Dashboard() {
                 </select>
                 <select
                   value={listParams.order}
-                  onChange={(e) => setListParams((p) => ({ ...p, order: e.target.value, page: 1 }))}
+                  onChange={(e) => setListParams((p) => ({ ...p, order: e.target.value as 'asc'|'desc', page: 1 }))}
                   className="text-sm border border-[#ededed] rounded-[12px] px-3 py-2 bg-white"
                 >
                   <option value="desc">Descending</option>
@@ -542,7 +516,7 @@ function Dashboard() {
           <JobDetailPanel
             job={selectedJob}
             onClose={() => setSelectedJob(null)}
-            onSaved={fetchData}
+            onSaved={refetchJobs}
             toast={toast}
           />
         )}
@@ -598,7 +572,7 @@ function Dashboard() {
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }
 
-export default Dashboard
+export default Dashboard;

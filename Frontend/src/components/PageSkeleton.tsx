@@ -13,7 +13,7 @@ export function DashboardSkeleton() {
         <div className="h-[420px] bg-[#fafafa] rounded-[16px] border border-[#ededed]" />
       </div>
     </div>
-  )
+  );
 }
 
 export function InsightsSkeleton() {
@@ -34,5 +34,5 @@ export function InsightsSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }

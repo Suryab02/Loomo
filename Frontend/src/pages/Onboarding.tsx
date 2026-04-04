@@ -1,52 +1,73 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Orbit, Upload, CheckCircle2 } from 'lucide-react'
-import { uploadResume, savePreferences } from '../services/api'
+import { useState, ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Orbit, Upload, CheckCircle2 } from 'lucide-react';
+import { uploadResume, savePreferences } from '../services/api';
+
+interface ResumeData {
+  current_role?: string;
+  current_company?: string;
+  skills?: string;
+  [key: string]: any;
+}
+
+interface Preferences {
+  target_role: string;
+  work_type: string;
+  target_location: string;
+  expected_ctc: string;
+  notice_period: string;
+  platforms: string;
+  [key: string]: string;
+}
 
 function Onboarding() {
-  const navigate = useNavigate()
-  const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [resumeData, setResumeData] = useState(null)
-  const [file, setFile] = useState(null)
-  const [prefs, setPrefs] = useState({
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [resumeData, setResumeData] = useState<ResumeData | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [prefs, setPrefs] = useState<Preferences>({
     target_role: '', work_type: 'remote', target_location: '',
     expected_ctc: '', notice_period: '', platforms: ''
-  })
+  });
 
-  const handleFileChange = (e) => setFile(e.target.files[0])
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFile(e.target.files[0]);
+    }
+  };
 
   const handleUploadResume = async () => {
-    if (!file) return
-    setLoading(true)
-    setError('')
+    if (!file) return;
+    setLoading(true);
+    setError('');
     try {
-      const res = await uploadResume(file)
-      setResumeData(res.data)
-      setStep(2)
+      const res = await uploadResume(file);
+      setResumeData(res.data);
+      setStep(2);
     } catch {
-      setError('Failed to parse resume. Please try again.')
+      setError('Failed to parse resume. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handlePrefsChange = (e) => setPrefs({ ...prefs, [e.target.name]: e.target.value })
+  const handlePrefsChange = (e: ChangeEvent<HTMLInputElement>) => setPrefs({ ...prefs, [e.target.name]: e.target.value });
 
   const handleSavePrefs = async () => {
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError('');
     try {
-      await savePreferences(prefs)
-      setStep(3)
+      await savePreferences(prefs);
+      setStep(3);
     } catch {
-      setError('Failed to save preferences.')
+      setError('Failed to save preferences.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f7f7] flex items-center justify-center p-6">
@@ -176,7 +197,7 @@ function Onboarding() {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Onboarding
+export default Onboarding;

@@ -1,33 +1,33 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { BrainCircuit } from 'lucide-react'
-import { askAgent } from '../services/api'
-import { useToast } from '../context/ToastContext'
+import { useState, FormEvent } from 'react';
+import { motion } from 'framer-motion';
+import { BrainCircuit } from 'lucide-react';
+import { askAgent } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 export default function AgentChatBox() {
-  const { toast } = useToast()
-  const [chatQuery, setChatQuery] = useState('')
-  const [chatReply, setChatReply] = useState('')
-  const [chatting, setChatting] = useState(false)
+  const { toast } = useToast();
+  const [chatQuery, setChatQuery] = useState('');
+  const [chatReply, setChatReply] = useState('');
+  const [chatting, setChatting] = useState(false);
 
-  const handleChat = async (e) => {
-    e.preventDefault()
-    if (!chatQuery) return
-    setChatting(true)
-    setChatReply('')
+  const handleChat = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!chatQuery) return;
+    setChatting(true);
+    setChatReply('');
     try {
-      const res = await askAgent(chatQuery)
-      setChatReply(res.data.reply)
-    } catch (err) {
+      const res = await askAgent(chatQuery);
+      setChatReply(res.data.reply);
+    } catch (err: any) {
       const msg = err.response?.status === 429
         ? 'Too many AI requests. Wait a minute and try again.'
-        : 'Could not reach the agent.'
-      setChatReply(msg)
-      toast(msg, 'error')
+        : 'Could not reach the agent.';
+      setChatReply(msg);
+      toast(msg, 'error');
     } finally {
-      setChatting(false)
+      setChatting(false);
     }
-  }
+  };
 
   return (
     <motion.div 
@@ -57,5 +57,5 @@ export default function AgentChatBox() {
         </motion.div>
       )}
     </motion.div>
-  )
+  );
 }

@@ -1,3 +1,4 @@
+import { ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -7,7 +8,7 @@ import Kanban from './pages/Kanban'
 import Insights from './pages/Insights'
 
 // Protected route — redirects to login if no token
-function PrivateRoute({ children }) {
+function PrivateRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token')
   return token ? children : <Navigate to="/login" />
 }

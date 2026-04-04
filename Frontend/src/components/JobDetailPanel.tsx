@@ -1,25 +1,63 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { X, Loader2, RefreshCw } from 'lucide-react'
-import { patchJob } from '../services/api'
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { X, Loader2, RefreshCw } from 'lucide-react';
+import { patchJob } from '../services/api';
+import { Job, JobStatus } from '../types';
 
-const STATUSES = ['wishlist', 'applied', 'screening', 'interview', 'offer', 'rejected']
+const STATUSES: JobStatus[] = ['wishlist', 'applied', 'screening', 'interview', 'offer', 'rejected'];
 
-function isoLocal(dt) {
-  if (!dt) return ''
-  const d = new Date(dt)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+function isoLocal(dt?: string) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function JobDetailPanel({ job, onClose, onSaved, toast }) {
-  const [form, setForm] = useState({})
-  const [saving, setSaving] = useState(false)
-  const [recalc, setRecalc] = useState(false)
+interface JobDetailPanelProps {
+  job: Job | null;
+  onClose: () => void;
+  onSaved?: () => void;
+  toast?: (msg: string, type: 'success' | 'error') => void;
+}
+
+interface JobFormState {
+  company: string;
+  role: string;
+  job_description: string;
+  job_url: string;
+  salary_range: string;
+  location: string;
+  platform: string;
+  notes: string;
+  contact_name: string;
+  contact_email: string;
+  status: JobStatus;
+  applied_date: string;
+  follow_up_date: string;
+}
+
+export default function JobDetailPanel({ job, onClose, onSaved, toast }: JobDetailPanelProps) {
+  const [form, setForm] = useState<JobFormState>({
+    company: '',
+    role: '',
+    job_description: '',
+    job_url: '',
+    salary_range: '',
+    location: '',
+    platform: '',
+    notes: '',
+    contact_name: '',
+    contact_email: '',
+    status: 'wishlist',
+    applied_date: '',
+    follow_up_date: '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [recalc, setRecalc] = useState(false);
 
   useEffect(() => {
-    if (!job) return
+    if (!job) return;
     setForm({
       company: job.company || '',
       role: job.role || '',
@@ -28,22 +66,22 @@ export default function JobDetailPanel({ job, onClose, onSaved, toast }) {
       salary_range: job.salary_range || '',
       location: job.location || '',
       platform: job.platform || '',
-      notes: job.notes || '',
-      contact_name: job.contact_name || '',
-      contact_email: job.contact_email || '',
+      notes: (job as any).notes || '',
+      contact_name: (job as any).contact_name || '',
+      contact_email: (job as any).contact_email || '',
       status: job.status || 'wishlist',
       applied_date: isoLocal(job.applied_date),
-      follow_up_date: isoLocal(job.follow_up_date),
-    })
-    setRecalc(false)
-  }, [job])
+      follow_up_date: isoLocal((job as any).follow_up_date),
+    });
+    setRecalc(false);
+  }, [job]);
 
-  if (!job) return null
+  if (!job) return null;
 
   const handleSave = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         company: form.company,
         role: form.role,
         job_description: form.job_description || null,
@@ -56,24 +94,24 @@ export default function JobDetailPanel({ job, onClose, onSaved, toast }) {
         contact_email: form.contact_email || null,
         status: form.status,
         recalculate_match: recalc,
-      }
+      };
       if (form.applied_date) {
-        payload.applied_date = new Date(form.applied_date).toISOString()
+        payload.applied_date = new Date(form.applied_date).toISOString();
       }
       if (form.follow_up_date) {
-        payload.follow_up_date = new Date(form.follow_up_date).toISOString()
+        payload.follow_up_date = new Date(form.follow_up_date).toISOString();
       }
-      await patchJob(job.id, payload)
-      toast?.('Application updated', 'success')
-      onSaved?.()
-      onClose()
-    } catch (e) {
-      const msg = e.response?.data?.detail || e.message || 'Could not save'
-      toast?.(typeof msg === 'string' ? msg : 'Could not save', 'error')
+      await patchJob(job.id, payload);
+      toast?.('Application updated', 'success');
+      onSaved?.();
+      onClose();
+    } catch (e: any) {
+      const msg = e.response?.data?.detail || e.message || 'Could not save';
+      toast?.(typeof msg === 'string' ? msg : 'Could not save', 'error');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <motion.div
@@ -121,7 +159,7 @@ export default function JobDetailPanel({ job, onClose, onSaved, toast }) {
             <label className="text-[11px] font-semibold text-[#737373] uppercase tracking-wide">Status</label>
             <select
               value={form.status}
-              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as JobStatus }))}
               className="mt-1 w-full px-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm capitalize"
             >
               {STATUSES.map((s) => (
@@ -255,5 +293,5 @@ export default function JobDetailPanel({ job, onClose, onSaved, toast }) {
         </div>
       </motion.aside>
     </motion.div>
-  )
+  );
 }

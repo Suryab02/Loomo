@@ -1,7 +1,21 @@
-import { motion } from 'framer-motion'
-import { Sparkles, X, Building2, MapPin, DollarSign, Target, Loader2, Link2 } from 'lucide-react'
-import { useState } from 'react'
-import { parseJobUrl } from '../services/api'
+import { motion } from 'framer-motion';
+import { Sparkles, X, Building2, MapPin, DollarSign, Target, Loader2, Link2 } from 'lucide-react';
+import { useState, Dispatch, SetStateAction } from 'react';
+import { parseJobUrl } from '../services/api';
+import { Job } from '../types';
+
+interface AddJobModalProps {
+  onClose: () => void;
+  pasteText: string;
+  setPasteText: Dispatch<SetStateAction<string>>;
+  handleParseJob: () => void;
+  parsing: boolean;
+  newJob: Partial<Job>;
+  setNewJob: Dispatch<SetStateAction<Partial<Job>>>;
+  handleAddJob: () => void;
+  adding: boolean;
+  toast?: (msg: string, type: 'success' | 'error') => void;
+}
 
 export default function AddJobModal({
   onClose,
@@ -14,30 +28,30 @@ export default function AddJobModal({
   handleAddJob,
   adding,
   toast,
-}) {
-  const [jobUrl, setJobUrl] = useState('')
-  const [fetchingUrl, setFetchingUrl] = useState(false)
+}: AddJobModalProps) {
+  const [jobUrl, setJobUrl] = useState('');
+  const [fetchingUrl, setFetchingUrl] = useState(false);
 
   const handleFetchUrl = async () => {
-    if (!jobUrl.trim()) return
-    setFetchingUrl(true)
+    if (!jobUrl.trim()) return;
+    setFetchingUrl(true);
     try {
-      const res = await parseJobUrl({ url: jobUrl.trim() })
+      const res = await parseJobUrl({ url: jobUrl.trim() });
       setNewJob((prev) => ({
         ...prev,
         ...res.data,
         job_url: jobUrl.trim(),
         job_description: prev.job_description || res.data.job_description || '',
-      }))
-      toast?.('Loaded details from URL — review before saving.', 'success')
-    } catch (e) {
-      console.error(e)
-      const d = e.response?.data?.detail
-      toast?.(typeof d === 'string' ? d : 'Could not parse this URL. Paste the description instead.', 'error')
+      }));
+      toast?.('Loaded details from URL — review before saving.', 'success');
+    } catch (e: any) {
+      console.error(e);
+      const d = e.response?.data?.detail;
+      toast?.(typeof d === 'string' ? d : 'Could not parse this URL. Paste the description instead.', 'error');
     } finally {
-      setFetchingUrl(false)
+      setFetchingUrl(false);
     }
-  }
+  };
 
   return (
     <motion.div
@@ -109,7 +123,7 @@ export default function AddJobModal({
               <field.icon className="w-4 h-4 absolute left-3 top-3 text-[#a3a3a3]" />
               <input
                 placeholder={field.ph}
-                value={newJob[field.name] || ''}
+                value={(newJob as any)[field.name] || ''}
                 onChange={(e) => setNewJob({ ...newJob, [field.name]: e.target.value })}
                 className="w-full pl-9 pr-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm text-[#111111] outline-none focus:border-[#a3a3a3] transition-colors placeholder:text-[#a3a3a3]"
               />
@@ -141,5 +155,5 @@ export default function AddJobModal({
 
       </motion.div>
     </motion.div>
-  )
+  );
 }

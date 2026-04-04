@@ -1,36 +1,47 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { getStats, getPlatforms, getKeywords } from '../services/api'
-import Navbar from '../components/Navbar'
-import StatCard from '../components/StatCard'
-import AgentChatBox from '../components/AgentChatBox'
-import { InsightsSkeleton } from '../components/PageSkeleton'
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { getStats, getPlatforms, getKeywords } from '../services/api';
+import Navbar from '../components/Navbar';
+import StatCard from '../components/StatCard';
+import AgentChatBox from '../components/AgentChatBox';
+import { InsightsSkeleton } from '../components/PageSkeleton';
+import { Stats } from '../types';
+
+interface PlatformData {
+  name: string;
+  count: number;
+}
+
+interface KeywordGap {
+  skill: string;
+  count: number;
+}
 
 function Insights() {
-  const [stats, setStats] = useState(null)
-  const [platforms, setPlatforms] = useState([])
-  const [keywords, setKeywords] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [platforms, setPlatforms] = useState<PlatformData[]>([]);
+  const [keywords, setKeywords] = useState<KeywordGap[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
       const [statsRes, platformsRes, keywordsRes] = await Promise.all([
         getStats(), getPlatforms(), getKeywords(),
-      ])
-      setStats(statsRes.data)
-      setPlatforms(Object.entries(platformsRes.data).map(([name, count]) => ({ name, count })))
-      setKeywords(keywordsRes.data.keyword_gaps)
+      ]);
+      setStats(statsRes.data);
+      setPlatforms(Object.entries(platformsRes.data as Record<string, number>).map(([name, count]) => ({ name, count })));
+      setKeywords(keywordsRes.data.keyword_gaps || []);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  if (loading) return <InsightsSkeleton />
+  if (loading) return <InsightsSkeleton />;
 
   const statCards = [
     { label: 'Wishlist', value: stats?.wishlist ?? 0 },
@@ -39,7 +50,7 @@ function Insights() {
     { label: 'Response Rate', value: `${stats?.response_rate ?? 0}%` },
     { label: 'Interviews', value: stats?.interview ?? 0 },
     { label: 'Offers', value: stats?.offer ?? 0 },
-  ]
+  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -94,7 +105,7 @@ function Insights() {
                     <div className="h-[5px] bg-[#f7f7f7] rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${keywords[0].count ? (kw.count / keywords[0].count) * 100 : 0}%` }}
+                        animate={{ width: `${keywords[0]?.count ? (kw.count / keywords[0].count) * 100 : 0}%` }}
                         transition={{ duration: 1, ease: 'easeOut', delay: i * 0.1 }}
                         className="h-full bg-[#111111] rounded-full"
                       />
@@ -107,7 +118,7 @@ function Insights() {
         </div>
       </main>
     </div>
-  )
+  );
 }
 
-export default Insights
+export default Insights;

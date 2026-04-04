@@ -16,7 +16,7 @@ def chat_completion(messages, tools=None, tool_choice=None, response_format=None
     """
     # Force reload env to catch changes to LLM_MODEL without restart
     load_dotenv()
-    model = os.getenv("LLM_MODEL", "gemini/gemini-2.5-flash")
+    model = os.getenv("LLM_MODEL", "gemini/gemini-1.5-flash")
 
     try:
         kwargs = {

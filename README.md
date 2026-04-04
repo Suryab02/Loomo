@@ -1,50 +1,47 @@
-# HuntDesk 🎯
+# Loomo 🛰️
+### Your AI-powered job hunt co-pilot.
 
-AI-powered job application tracker. Upload your resume, track applications, 
-and get AI match scores for every job you apply to.
+Loomo is a smart job application tracker I built to turn the messy job search process into a clean, automated dashboard. It doesn't just list your jobs—it uses an **Agnostic AI Engine** (Gemini, Claude, or GPT-4o) to analyze every application you add.
 
-**Live:** https://huntdesk.vercel.app
+## ✨ Why I built this
+Standard spreadsheets are boring and static. Loomo is built for speed and intelligence:
+*  **AI Smart Paste**: Don't waste time typing. Just paste the raw job description, and Loomo extracts the role, company, and location for you.
+*  **Dynamic Brain**: Use **LiteLLM** to hot-swap your AI provider (Gemini, OpenAI, Anthropic) directly from your `.env` without restarting.
+*  **Agentic Career Analyst**: A chat interface that doesn't just talk—it has **Write Access** to your database. You can say *"I just applied to Google as a SWE"* and it will add the job for you.
+*  **Real-time Match Scoring**: See exactly how well your resume fits a job with a percentage score and a list of missing skills you should address before applying.
+*  **Clean Kanban**: Move your applications through stages (Wishlist → Applied → Interview → Offer) with a minimalist drag-and-drop board.
 
-## What it does
+## 🛠️ The Tech
+*  **Frontend**: React + Tailwind CSS + Framer Motion (for that premium minimalist feel).
+*  **Backend**: FastAPI + SQLAlchemy (PostgreSQL).
+*  **AI Strategy**: LiteLLM for model-agnostic completions and unified tool calling.
 
-- Upload resume → AI extracts your skills automatically
-- Add job applications with AI match scoring
-- Kanban board to track application status
-- Analytics dashboard with response rates and skill gaps
+## 🚀 Running it locally
 
-## Tech Stack
-
-- **Backend:** FastAPI, PostgreSQL, Google Gemini AI
-- **Frontend:** React, Tailwind CSS
-- **Deployed:** Railway (backend) + Vercel (frontend)
-
-## Run locally
-
-**Backend:**
+### 1. Backend
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate
+cd Backend
 pip install -r requirements.txt
-cp .env.example .env
-# Fill in .env values
+# Add your keys to .env
 python -m uvicorn app.main:app --reload
 ```
 
-**Frontend:**
+### 2. Frontend
 ```bash
 cd frontend
-npm install --legacy-peer-deps
+npm install
 npm run dev
 ```
 
-## Environment Variables
+## 🧠 Environment Configuration
+In your `Backend/.env`, you'll need:
 ```env
-DATABASE_URL=your-postgresql-url
-SECRET_KEY=your-secret-key
-GEMINI_API_KEY=your-gemini-key
+DATABASE_URL=your_postgresql_url
+SECRET_KEY=your_random_string
+LLM_MODEL=gemini/gemini-1.5-flash  # Or "openai/gpt-4o"
+GEMINI_API_KEY=your_key
 ```
 
-## Author
-
-Surya Prabhas Bandaru — [LinkedIn](https://www.linkedin.com/in/bsuryaprabhas/) • [Portfolio](https://surya-portfolio-mu.vercel.app/)
+---
+Built with 💜 by **Surya Prabhas Bandaru**
+[LinkedIn](https://www.linkedin.com/in/bsuryaprabhas/) • [Portfolio](https://surya-portfolio-mu.vercel.app/)

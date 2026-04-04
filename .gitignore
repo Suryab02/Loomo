@@ -1,12 +1,13 @@
 # ── Backend ──
-backend/venv/
-backend/.env
-backend/__pycache__/
-backend/**/__pycache__/
-backend/**/*.pyc
-backend/**/*.pyo
-backend/.pytest_cache/
-backend/*.egg-info/
+Backend/venv/
+Backend/.env
+Backend/__pycache__/
+Backend/**/__pycache__/
+Backend/**/*.pyc
+Backend/**/*.pyo
+Backend/.pytest_cache/
+Backend/*.egg-info/
+Backend/.dockerignore
 
 # ── Frontend ──
 frontend/node_modules/

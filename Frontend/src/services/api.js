@@ -29,12 +29,15 @@ export const savePreferences = (data) => API.post('/onboarding/preferences', dat
 export const getJobs = () => API.get('/jobs/')
 export const addJob = (data) => API.post('/jobs/', data)
 export const parseJobText = (data) => API.post('/jobs/parse-text', data)
+export const parseJobUrl = (data) => API.post('/jobs/parse-url', data)
 export const updateJobStatus = (id, status) => API.put(`/jobs/${id}/status`, { status })
 export const deleteJob = (id) => API.delete(`/jobs/${id}`)
 
 // Insights
 export const getStats = () => API.get('/insights/stats')
+export const getReminders = () => API.get('/insights/reminders')
 export const getPlatforms = () => API.get('/insights/platforms')
 export const getKeywords = () => API.get('/insights/keywords')
 export const askAgent = (query) => API.post('/insights/chat', { query })
 export const generateCoverLetter = (jobId) => API.post(`/insights/cover-letter/${jobId}`)
+export const generateFollowUp = (jobId) => API.post(`/insights/follow-up-email/${jobId}`)

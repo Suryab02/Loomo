@@ -4,16 +4,21 @@ from app.database import get_db
 from app.models.user import User
 from app.models.job import Job
 from app.utils.auth import get_current_user
+from app.utils.security import security_gateway, scrub_database_input
 from app.services.match_score import calculate_match
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from app.services.job_parser import parse_job_text
+from app.services.url_scraper import scrape_job_from_url
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 class ParseTextRequest(BaseModel):
     text: str
+
+class ParseUrlRequest(BaseModel):
+    url: str
 
 class JobRequest(BaseModel):
     company: str
@@ -41,12 +46,26 @@ def parse_text(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/parse-url")
+async def parse_url(
+    request: ParseUrlRequest,
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        parsed_data = await scrape_job_from_url(request.url)
+        return parsed_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/")
 def add_job(
     request: JobRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Scrub PII from job data before it touches the DB
+    cleaned_data = scrub_database_input(request.model_dump())
+    
     # Calculate match score if job description provided
     match_score = None
     matched_skills = None
@@ -61,16 +80,16 @@ def add_job(
     # Create new job
     new_job = Job(
         user_id=current_user.id,
-        company=request.company,
-        role=request.role,
-        job_description=request.job_description,
-        job_url=request.job_url,
-        salary_range=request.salary_range,
-        location=request.location,
-        platform=request.platform,
-        notes=request.notes,
-        contact_name=request.contact_name,
-        contact_email=request.contact_email,
+        company=cleaned_data.get('company'),
+        role=cleaned_data.get('role'),
+        job_description=cleaned_data.get('job_description'),
+        job_url=cleaned_data.get('job_url'),
+        salary_range=cleaned_data.get('salary_range'),
+        location=cleaned_data.get('location'),
+        platform=cleaned_data.get('platform'),
+        notes=cleaned_data.get('notes'),
+        contact_name=cleaned_data.get('contact_name'),
+        contact_email=cleaned_data.get('contact_email'),
         match_score=match_score,
         matched_skills=matched_skills,
         missing_skills=missing_skills,

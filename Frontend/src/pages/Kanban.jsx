@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react'
 import { getJobs, updateJobStatus, deleteJob } from '../services/api'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { motion } from 'framer-motion'
+import { Loader2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import JobCard from '../components/JobCard'
 
 const COLUMNS = [
-  { id: 'wishlist',  label: 'Wishlist' },
-  { id: 'applied',   label: 'Applied' },
-  { id: 'screening', label: 'Screening' },
-  { id: 'interview', label: 'Interview' },
-  { id: 'offer',     label: 'Offer' },
-  { id: 'rejected',  label: 'Rejected' },
+  { id: 'wishlist',  label: 'Wishlist',  color: '#737373', bg: '#f5f5f5' },
+  { id: 'applied',   label: 'Applied',   color: '#2563eb', bg: '#eff6ff' },
+  { id: 'screening', label: 'Screening', color: '#7c3aed', bg: '#f5f3ff' },
+  { id: 'interview', label: 'Interview', color: '#ea580c', bg: '#fff7ed' },
+  { id: 'offer',     label: 'Offer',     color: '#16a34a', bg: '#f0fdf4' },
+  { id: 'rejected',  label: 'Rejected',  color: '#dc2626', bg: '#fef2f2' },
 ]
 
 function Kanban() {
@@ -55,9 +56,23 @@ function Kanban() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white text-[#737373] text-sm">
-      <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-        Loading board...
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center"
+      >
+        <div className="w-12 h-12 bg-[#111111] rounded-[18px] flex items-center justify-center mb-4 shadow-lg">
+          <Loader2 className="w-6 h-6 text-white animate-spin" />
+        </div>
+        <h2 className="text-sm font-bold text-[#111111] mb-1">Organizing your board...</h2>
+        
+        <button 
+          onClick={fetchJobs}
+          className="mt-6 text-[10px] font-bold text-[#111111] underline underline-offset-4 hover:text-[#737373] transition-colors"
+        >
+          Taking too long? Sync data
+        </button>
       </motion.div>
     </div>
   )
@@ -74,10 +89,13 @@ function Kanban() {
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="flex gap-4 overflow-x-auto pb-4 items-start select-none">
             {COLUMNS.map(col => (
-              <div key={col.id} className="w-[280px] shrink-0 flex flex-col bg-[#f7f7f7] rounded-[16px] border border-[#ededed] p-2">
-                <div className="px-3 py-2 flex items-center justify-between mb-2">
-                  <span className="text-[13px] font-semibold text-[#111111] uppercase tracking-wide">{col.label}</span>
-                  <span className="text-[11px] font-bold bg-white text-[#737373] px-2 py-0.5 rounded-full border border-[#ededed] shadow-sm">
+              <div key={col.id} className="w-[300px] shrink-0 flex flex-col bg-[#fafafa] rounded-[24px] border border-[#ededed] p-2 min-h-[70vh]">
+                <div className="px-4 py-3 flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div style={{ backgroundColor: col.color }} className="w-1.5 h-1.5 rounded-full" />
+                    <span className="text-[13px] font-bold text-[#111111] tracking-tight">{col.label}</span>
+                  </div>
+                  <span className="text-[11px] font-bold bg-white text-[#737373] px-2.5 py-1 rounded-full border border-[#ededed] shadow-sm">
                     {getJobsByStatus(col.id).length}
                   </span>
                 </div>
@@ -86,13 +104,21 @@ function Kanban() {
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef} {...provided.droppableProps}
-                      className={`min-h-[150px] rounded-[12px] p-2 transition-colors ${snapshot.isDraggingOver ? 'bg-[#ededed]/50' : 'bg-transparent'}`}
+                      className={`flex-1 rounded-[18px] p-2 transition-all duration-200 ${snapshot.isDraggingOver ? 'bg-[#f0f0f0]' : 'bg-transparent'}`}
                     >
                       {getJobsByStatus(col.id).map((job, index) => (
                         <Draggable key={job.id} draggableId={String(job.id)} index={index}>
                           {(provided, snapshot) => (
-                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="mb-2 outline-none">
-                              <JobCard job={job} onDelete={handleDelete} dragging={snapshot.isDragging} />
+                            <div 
+                              ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} 
+                              className="mb-3 outline-none"
+                            >
+                              <JobCard 
+                                job={job} 
+                                onDelete={handleDelete} 
+                                dragging={snapshot.isDragging}
+                                accentColor={col.color}
+                              />
                             </div>
                           )}
                         </Draggable>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Upload, Target, FileText, Check, Copy, X } from 'lucide-react'
-import { getStats, getJobs, addJob, parseJobText, uploadResume, deleteJob, generateCoverLetter } from '../services/api'
+import { Plus, Upload, Target, FileText, Check, Copy, X, Loader2 } from 'lucide-react'
+import { getStats, getJobs, getReminders, addJob, parseJobText, parseJobUrl, uploadResume, deleteJob, generateCoverLetter, generateFollowUp } from '../services/api'
 import Navbar from '../components/Navbar'
 import StatCard from '../components/StatCard'
 import JobRow from '../components/JobRow'
@@ -10,6 +10,7 @@ import AddJobModal from '../components/AddJobModal'
 function Dashboard() {
   const [stats, setStats] = useState(null)
   const [jobs, setJobs] = useState([])
+  const [reminders, setReminders] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddJob, setShowAddJob] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -28,9 +29,10 @@ function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const [statsRes, jobsRes] = await Promise.all([getStats(), getJobs()])
+      const [statsRes, jobsRes, remindersRes] = await Promise.all([getStats(), getJobs(), getReminders()])
       setStats(statsRes.data)
       setJobs(jobsRes.data)
+      setReminders(remindersRes.data)
     } catch (err) {
       console.error(err)
     } finally {
@@ -48,6 +50,24 @@ function Dashboard() {
     } catch (err) {
       console.error(err);
       alert("Failed to parse the job text.");
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  const handleParseUrl = async (url) => {
+    setParsing(true);
+    try {
+      const res = await parseJobUrl({ url });
+      setNewJob(prev => ({ 
+        ...prev, 
+        ...res.data, 
+        job_description: res.data.job_description || `Link: ${url}`,
+        job_url: url 
+      }));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to parse the job link. The site might be blocked or formatted uniquely.");
     } finally {
       setParsing(false);
     }
@@ -107,6 +127,19 @@ function Dashboard() {
     }
   }
 
+  const handleGenerateFollowUp = async (id) => {
+    setGeneratingLetter(true)
+    try {
+      const res = await generateFollowUp(id)
+      setGeneratedLetter(res.data.follow_up_email)
+    } catch (err) {
+      console.error(err)
+      alert("Failed to generate follow-up email.")
+    } finally {
+      setGeneratingLetter(false)
+    }
+  }
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedLetter)
     setCopied(true)
@@ -114,9 +147,24 @@ function Dashboard() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white text-[#737373] text-sm">
-      <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-        Loading your workspace...
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center"
+      >
+        <div className="w-16 h-16 bg-[#111111] rounded-[24px] flex items-center justify-center mb-6 shadow-xl">
+          <Loader2 className="w-8 h-8 text-white animate-spin" />
+        </div>
+        <h2 className="text-xl font-bold text-[#111111] tracking-tight mb-2">Preparing your workspace</h2>
+        <p className="text-[#a3a3a3] text-sm animate-pulse">Syncing your job applications...</p>
+        
+        <button 
+          onClick={fetchData}
+          className="mt-10 text-[12px] font-bold text-[#111111] underline underline-offset-4 hover:text-[#737373] transition-colors"
+        >
+          Taking too long? Try refreshing
+        </button>
       </motion.div>
     </div>
   )
@@ -144,16 +192,16 @@ function Dashboard() {
             <button
               onClick={() => fileInputRef.current.click()}
               disabled={uploadingResume}
-              className="flex items-center gap-2 px-4 py-2 bg-[#f7f7f7] hover:bg-[#ededed] text-[#111111] text-sm font-medium rounded-full transition-colors"
+              className="group flex items-center gap-2 px-5 py-2.5 bg-[#f7f7f7] hover:bg-[#ededed] text-[#111111] text-sm font-semibold rounded-full border border-[#ededed] transition-all disabled:opacity-50"
             >
-              <Upload className="w-4 h-4" />
-              {uploadingResume ? 'Parsing...' : 'Re-sync Resume'}
+              {uploadingResume ? <Loader2 className="w-4 h-4 animate-spin text-[#737373]" /> : <Upload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />}
+              {uploadingResume ? 'Processing...' : 'Re-sync Resume'}
             </button>
             <button
               onClick={() => setShowAddJob(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#111111] hover:bg-[#333333] text-white text-sm font-medium rounded-full transition-colors"
+              className="group flex items-center gap-2 px-5 py-2.5 bg-[#111111] hover:bg-[#262626] text-white text-sm font-semibold rounded-full transition-all shadow-md hover:shadow-lg active:scale-95"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
               Add Application
             </button>
           </div>
@@ -164,6 +212,38 @@ function Dashboard() {
             <StatCard key={card.label} label={card.label} value={card.value} index={i} />
           ))}
         </div>
+
+        <AnimatePresence>
+          {reminders.length > 0 && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              className="mb-8 overflow-hidden"
+            >
+              <div className="bg-[#fff9eb] border border-[#ffeeba] p-5 rounded-[20px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 bg-[#fef3c7] rounded-full flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-[#d97706]" />
+                  </div>
+                  <div>
+                    <h4 className="text-[15px] font-semibold text-[#92400e]">Proactive Reminders</h4>
+                    <p className="text-[13px] text-[#b45309]">Loomo noticed {reminders.length} applications from over a week ago. Need to follow up?</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                  {reminders.map(job => (
+                    <button
+                      key={job.id}
+                      onClick={() => handleGenerateFollowUp(job.id)}
+                      className="px-3 py-1.5 bg-white border border-[#ffeeba] hover:border-[#f59e0b] text-[#92400e] text-[12px] font-medium rounded-lg whitespace-nowrap transition-all shadow-sm"
+                    >
+                      Follow up: {job.company}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.div 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
@@ -210,6 +290,7 @@ function Dashboard() {
             setNewJob={setNewJob}
             handleAddJob={handleAddJob}
             adding={adding}
+            onParseUrl={handleParseUrl}
           />
         )}
       </AnimatePresence>

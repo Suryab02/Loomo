@@ -4,10 +4,12 @@ from app.database import get_db
 from app.models.user import User
 from app.models.job import Job
 from app.utils.auth import get_current_user
+from app.utils.security import security_gateway
 from pydantic import BaseModel
 import os
 import json
 from app.services.llm_gateway import chat_completion
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/insights", tags=["insights"])
 
@@ -137,9 +139,23 @@ def chat_with_agent(
 
     available_tools["update_application_status"] = handle_status_update
 
+    # Sanitize user query to prevent injection/leaks
+    sanitized_query = security_gateway(request.query)
+
     messages = [
-        {"role": "system", "content": "You are the Loomo Career Analyst. Use tools to manage job data or explain stats. Keep responses concise (1-2 sentences)."},
-        {"role": "user", "content": request.query}
+        {
+          "role": "system", 
+          "content": (
+              "You are the Loomo Career Analyst. Your world is strictly limited to job application data, "
+              "resume matching, and career coaching. \n\n"
+              "STRICT RULES:\n"
+              "1. ONLY discuss career-related topics, your user's job applications, or resume metadata.\n"
+              "2. If a user asks about anything else (world news, weather, coding unrelated to their job hunt, etc.), "
+              "politely refuse by saying: 'I am your Career Co-pilot, focused only on your professional journey. Let\'s get back to your job hunt!'.\n"
+              "3. Use tools to manage job data or explain stats. Keep responses concise (1-2 sentences)."
+          )
+        },
+        {"role": "user", "content": sanitized_query}
     ]
 
     # Handle agent logic (max 5 steps to avoid loops)
@@ -173,6 +189,22 @@ def chat_with_agent(
             })
     
     return {"reply": "I processed your request but reached my limit. Check your dashboard!"}
+
+@router.get("/reminders")
+def get_followup_reminders(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    
+    # Jobs that were applied more than 7 days ago and still have 'applied' status
+    stale_jobs = db.query(Job).filter(
+        Job.user_id == current_user.id,
+        Job.status == "applied",
+        Job.applied_date <= seven_days_ago
+    ).all()
+    
+    return stale_jobs
 
 @router.post("/cover-letter/{job_id}")
 def generate_cover_letter(
@@ -213,3 +245,37 @@ def generate_cover_letter(
         return {"cover_letter": response.choices[0].message.content}
     except Exception as e:
         return {"error": f"Failed to generate cover letter: {str(e)}"}
+
+@router.post("/follow-up-email/{job_id}")
+def generate_followup_email(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job: return {"error": "Job not found"}
+    
+    messages = [
+        {"role": "system", "content": "You are a professional career advisor assisting a candidate with a follow-up email after a job application."},
+        {"role": "user", "content": f"""
+            Draft a polite and professional follow-up email for the following job.
+            It's been over a week since the application was submitted.
+            
+            ROLE: {job.role}
+            COMPANY: {job.company}
+            
+            CANDIDATE: {current_user.preferences.get('full_name', 'Professional Candidate')}
+            
+            REQUIREMENTS:
+            - Concise and respectful.
+            - Reiterate interest in the position.
+            - Under 150 words.
+            - Use [Your Name] as a placeholder for the signature.
+        """}
+    ]
+    
+    try:
+        response = chat_completion(messages)
+        return {"follow_up_email": response.choices[0].message.content}
+    except Exception as e:
+        return {"error": f"Failed to generate follow-up: {str(e)}"}

@@ -4,21 +4,21 @@ from app.services.llm_gateway import chat_completion, parse_json_response
 
 def parse_job_text(text: str) -> dict:
     messages = [
-        {"role": "system", "content": "You are a job description extraction assistant. Return only valid JSON."},
+        {"role": "system", "content": "You are Loomo's Job Extraction Agent. Your task is to analyze messy job description text and extract structured data. You are extremely accurate even with partial or low-quality text inputs. Return ONLY valid JSON."},
         {"role": "user", "content": f"""
-            Extract the following job details from the provided text. Return as JSON only, no extra text, no markdown. 
-            If you cannot find a specific field, return an empty string for that field ("").
+            Analyze the following text and extract the specific job details.
             
-            {{
-                "company": "Company Name",
-                "role": "Job Title",
-                "location": "City, State or Remote",
-                "salary_range": "Salary if mentioned, else empty string",
-                "platform": "Platform name (LinkedIn, Wellfound, etc.)",
-                "job_description": "Clean, concise 2-3 sentence summary"
-            }}
-            
-            Text Input:
+            FORMAT REQUIREMENTS:
+            - "company": Full official company name. Look for "About [Company]" or "Join [Company]".
+            - "role": The exact job title (e.g., "Senior React Developer").
+            - "location": City and State (or "Remote" / "Hybrid").
+            - "salary_range": Extract numbers (e.g., "$120k - $150k") if mentioned.
+            - "platform": Where did this text likely come from? (e.g., LinkedIn, Indeed, etc.)
+            - "job_description": A 1-2 sentence high-level summary of what the role entails.
+
+            If a field is absolutely not found, use an empty string "". No extra commentary. Return ONLY the JSON object.
+
+            TEXT INPUT:
             {text}
         """}
     ]

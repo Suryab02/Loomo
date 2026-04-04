@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
-import { Trash2 } from 'lucide-react'
+import { Trash2, FileText, Loader2 } from 'lucide-react'
 
-export default function JobRow({ job, onDelete }) {
+export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating }) {
   return (
     <motion.div 
       layout
@@ -33,6 +33,15 @@ export default function JobRow({ job, onDelete }) {
         <div className="px-3 py-1 rounded-full text-[12px] font-medium capitalize bg-[#f7f7f7] text-[#111111] border border-[#ededed]">
           {job.status}
         </div>
+
+        <button
+          onClick={() => onGenerateLetter(job.id)}
+          disabled={isGenerating}
+          className="p-1.5 text-[#a3a3a3] hover:text-[#6d28d9] hover:bg-[#f5f3ff] rounded-md transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+          title="Draft Cover Letter"
+        >
+          {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+        </button>
 
         <button
           onClick={() => onDelete(job.id)}

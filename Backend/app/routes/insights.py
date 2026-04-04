@@ -173,3 +173,43 @@ def chat_with_agent(
             })
     
     return {"reply": "I processed your request but reached my limit. Check your dashboard!"}
+
+@router.post("/cover-letter/{job_id}")
+def generate_cover_letter(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Fetch the specific job
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        return {"error": "Job not found"}
+    
+    # 2. Prepare the prompt for the AI
+    # We use the user's base skills and the specific job description
+    messages = [
+        {"role": "system", "content": "You are a world-class career coach and professional writer. Your goal is to write a highly persuasive, personalized cover letter that highlights why a candidate is the perfect fit for a specific role."},
+        {"role": "user", "content": f"""
+            Draft a personalized cover letter for the following job using the candidate's skills.
+            
+            ROLE: {job.role}
+            COMPANY: {job.company}
+            JOB DESCRIPTION: {job.job_description}
+            
+            CANDIDATE'S SKILLS: {current_user.preferences.get('skills', 'Experienced Professional')}
+            CANDIDATE'S TARGET ROLE: {current_user.preferences.get('target_role', job.role)}
+            
+            REQUIREMENTS:
+            - Professional yet enthusiastic tone.
+            - Focus on how the CANDIDATE'S SKILLS specifically solve the needs in the JOB DESCRIPTION.
+            - Keep it under 300 words.
+            - Use [Your Name] as a placeholder for the signature.
+            - Do NOT include placeholders like [Date] or [Company Address] — start directly with the salutation.
+        """}
+    ]
+    
+    try:
+        response = chat_completion(messages)
+        return {"cover_letter": response.choices[0].message.content}
+    except Exception as e:
+        return {"error": f"Failed to generate cover letter: {str(e)}"}

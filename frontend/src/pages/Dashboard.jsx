@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Upload, Target } from 'lucide-react'
-import { getStats, getJobs, addJob, parseJobText, uploadResume, deleteJob } from '../services/api'
+import { Plus, Upload, Target, FileText, Check, Copy, X } from 'lucide-react'
+import { getStats, getJobs, addJob, parseJobText, uploadResume, deleteJob, generateCoverLetter } from '../services/api'
 import Navbar from '../components/Navbar'
 import StatCard from '../components/StatCard'
 import JobRow from '../components/JobRow'
@@ -20,6 +20,9 @@ function Dashboard() {
   const [newJob, setNewJob] = useState({
     company: '', role: '', job_description: '', platform: '', location: '', salary_range: ''
   })
+  const [generatedLetter, setGeneratedLetter] = useState(null)
+  const [generatingLetter, setGeneratingLetter] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => { fetchData() }, [])
 
@@ -89,6 +92,25 @@ function Dashboard() {
       console.error(err);
       alert("Failed to delete application.");
     }
+  }
+
+  const handleGenerateLetter = async (id) => {
+    setGeneratingLetter(true)
+    try {
+      const res = await generateCoverLetter(id)
+      setGeneratedLetter(res.data.cover_letter)
+    } catch (err) {
+      console.error(err)
+      alert("Failed to generate cover letter. Ensure the job has a description.")
+    } finally {
+      setGeneratingLetter(false)
+    }
+  }
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedLetter)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   if (loading) return (
@@ -162,7 +184,13 @@ function Dashboard() {
             <div className="divide-y divide-[#ededed]">
               <AnimatePresence>
                 {jobs.map((job) => (
-                  <JobRow key={job.id} job={job} onDelete={handleDeleteJob} />
+                  <JobRow 
+                    key={job.id} 
+                    job={job} 
+                    onDelete={handleDeleteJob} 
+                    onGenerateLetter={handleGenerateLetter}
+                    isGenerating={generatingLetter}
+                  />
                 ))}
               </AnimatePresence>
             </div>
@@ -183,6 +211,52 @@ function Dashboard() {
             handleAddJob={handleAddJob}
             adding={adding}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {generatedLetter && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-[24px] shadow-2xl w-full max-w-[600px] flex flex-col max-h-[85vh]"
+            >
+              <div className="p-6 border-b border-[#ededed] flex justify-between items-center bg-[#fdfdfd] rounded-t-[24px]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#f5f3ff] rounded-xl flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-[#6d28d9]" />
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-semibold text-[#111111]">Draft Cover Letter</h3>
+                    <p className="text-[12px] text-[#737373]">Generated with Loomo AI</p>
+                  </div>
+                </div>
+                <button onClick={() => setGeneratedLetter(null)} className="p-2 text-[#a3a3a3] hover:bg-[#f7f7f7] rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-8 overflow-y-auto whitespace-pre-wrap text-[15px] leading-relaxed text-[#404040]">
+                {generatedLetter}
+              </div>
+
+              <div className="p-6 border-t border-[#ededed] flex gap-3">
+                <button
+                  onClick={copyToClipboard}
+                  className="flex-1 py-3 bg-[#6d28d9] hover:bg-[#5b21b6] text-white rounded-[14px] font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#6d28d9]/20"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? 'Copied!' : 'Copy to Clipboard'}
+                </button>
+                <button
+                  onClick={() => setGeneratedLetter(null)}
+                  className="flex-1 py-3 border border-[#ededed] hover:bg-[#f7f7f7] text-[#111111] rounded-[14px] font-semibold text-sm transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

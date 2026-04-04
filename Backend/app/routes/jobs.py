@@ -8,8 +8,12 @@ from app.services.match_score import calculate_match
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from app.services.job_parser import parse_job_text
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+
+class ParseTextRequest(BaseModel):
+    text: str
 
 class JobRequest(BaseModel):
     company: str
@@ -25,6 +29,17 @@ class JobRequest(BaseModel):
 
 class UpdateStatusRequest(BaseModel):
     status: str  # wishlist/applied/screening/interview/offer/rejected
+
+@router.post("/parse-text")
+def parse_text(
+    request: ParseTextRequest,
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        parsed_data = parse_job_text(request.text)
+        return parsed_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/")
 def add_job(

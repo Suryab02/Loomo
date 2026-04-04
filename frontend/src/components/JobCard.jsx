@@ -1,117 +1,37 @@
-const STATUS_STYLES = {
-  wishlist:  { bg: '#f1f5f9', color: '#475569' },
-  applied:   { bg: '#eff6ff', color: '#2563eb' },
-  screening: { bg: '#fffbeb', color: '#d97706' },
-  interview: { bg: '#f5f3ff', color: '#7c3aed' },
-  offer:     { bg: '#f0fdf4', color: '#16a34a' },
-  rejected:  { bg: '#fef2f2', color: '#dc2626' },
-}
+import { motion } from 'framer-motion'
+import { Trash2 } from 'lucide-react'
 
 function JobCard({ job, onDelete, dragging = false }) {
-  const status = STATUS_STYLES[job.status] || STATUS_STYLES.wishlist
-
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '10px',
-      padding: '14px',
-      marginBottom: '8px',
-      border: dragging ? `1.5px solid ${status.color}` : '1px solid var(--border)',
-      boxShadow: dragging ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
-      cursor: 'grab',
-      transition: 'box-shadow 0.15s, border 0.15s'
-    }}>
-
-      {/* Company avatar */}
-      <div style={{
-        width: '28px',
-        height: '28px',
-        borderRadius: '7px',
-        background: status.bg,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '12px',
-        fontWeight: 700,
-        color: status.color,
-        marginBottom: '8px'
-      }}>
-        {job.company[0]}
+    <div 
+      className={`group relative bg-white rounded-[12px] p-4 text-left transition-all ${
+        dragging ? 'shadow-2xl border-[#111111] border-2 scale-105 z-50' : 'border border-[#ededed] shadow-sm hover:shadow hover:border-[#d4d4d4]'
+      }`}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <div className="w-8 h-8 rounded-lg bg-[#f7f7f7] border border-[#ededed] flex items-center justify-center font-bold text-[#111111] text-xs">
+          {job.company[0]?.toUpperCase()}
+        </div>
+        {onDelete && (
+          <button
+            onClick={() => onDelete(job.id)}
+            className="p-1.5 text-[#a3a3a3] hover:text-[#dc2626] hover:bg-[#fef2f2] rounded-md transition-all opacity-0 group-hover:opacity-100"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
-      {/* Company + role */}
-      <p style={{
-        fontWeight: 600,
-        color: 'var(--text)',
-        fontSize: '13px'
-      }}>
-        {job.company}
-      </p>
-      <p style={{
-        color: 'var(--text-muted)',
-        fontSize: '12px',
-        marginTop: '2px'
-      }}>
-        {job.role}
-      </p>
+      <p className="font-semibold text-[#111111] text-[13px] leading-tight mb-0.5">{job.company}</p>
+      <p className="text-[#737373] text-[12px]">{job.role}</p>
 
-      {/* Match score */}
       {job.match_score && (
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          marginTop: '8px',
-          fontSize: '11px',
-          fontWeight: 600,
-          padding: '3px 8px',
-          borderRadius: '20px',
-          background: job.match_score >= 70
-            ? '#f0fdf4'
-            : job.match_score >= 40
-            ? '#fffbeb'
-            : '#fef2f2',
-          color: job.match_score >= 70
-            ? '#16a34a'
-            : job.match_score >= 40
-            ? '#d97706'
-            : '#dc2626'
-        }}>
-          {job.match_score}% match
+        <div className={`mt-3 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+          job.match_score >= 70 ? 'bg-[#f0fdf4] text-[#059669]' : 
+          job.match_score >= 40 ? 'bg-[#fffbeb] text-[#d97706]' : 'bg-[#fef2f2] text-[#dc2626]'
+        }`}>
+          {job.match_score}% Match
         </div>
-      )}
-
-      {/* Platform */}
-      {job.platform && (
-        <p style={{
-          color: 'var(--text-subtle)',
-          fontSize: '11px',
-          marginTop: '6px'
-        }}>
-          {job.platform}
-        </p>
-      )}
-
-      {/* Delete button */}
-      {onDelete && (
-        <button
-          onClick={() => onDelete(job.id)}
-          style={{
-            display: 'block',
-            marginTop: '8px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '11px',
-            color: 'var(--text-subtle)',
-            padding: 0,
-            fontFamily: 'Geist, sans-serif',
-            transition: 'color 0.15s'
-          }}
-          onMouseEnter={e => e.target.style.color = '#dc2626'}
-          onMouseLeave={e => e.target.style.color = 'var(--text-subtle)'}
-        >
-          Remove
-        </button>
       )}
     </div>
   )

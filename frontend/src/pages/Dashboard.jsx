@@ -1,17 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getStats, getJobs, addJob } from '../services/api'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Upload, Trash2, Sparkles, X, Building2, MapPin, DollarSign, Target } from 'lucide-react'
+import { getStats, getJobs, addJob, parseJobText, uploadResume, deleteJob } from '../services/api'
 import Navbar from '../components/Navbar'
-import StatCard from '../components/StatCard'
-
-const STATUS_STYLES = {
-  wishlist: { bg: '#f1f5f9', color: '#475569' },
-  applied: { bg: '#eff6ff', color: '#2563eb' },
-  screening: { bg: '#fffbeb', color: '#d97706' },
-  interview: { bg: '#f5f3ff', color: '#7c3aed' },
-  offer: { bg: '#f0fdf4', color: '#16a34a' },
-  rejected: { bg: '#fef2f2', color: '#dc2626' },
-}
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -20,6 +12,10 @@ function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [showAddJob, setShowAddJob] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [parsing, setParsing] = useState(false)
+  const [pasteText, setPasteText] = useState('')
+  const [uploadingResume, setUploadingResume] = useState(false)
+  const fileInputRef = useRef(null)
   const [newJob, setNewJob] = useState({
     company: '', role: '', job_description: '',
     platform: '', location: '', salary_range: ''
@@ -39,6 +35,21 @@ function Dashboard() {
     }
   }
 
+  const handleParseJob = async () => {
+    if (!pasteText) return;
+    setParsing(true);
+    try {
+      const res = await parseJobText({ text: pasteText });
+      setNewJob(prev => ({ ...prev, ...res.data, job_description: pasteText }));
+      setPasteText('');
+    } catch (err) {
+      console.error(err);
+      alert("Failed to parse the job text.");
+    } finally {
+      setParsing(false);
+    }
+  }
+
   const handleAddJob = async () => {
     setAdding(true)
     try {
@@ -53,235 +64,235 @@ function Dashboard() {
     }
   }
 
+  const handleResumeReupload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingResume(true);
+    try {
+      await uploadResume(file);
+      alert("Success! Your skills and current role have been updated in the database based on the new resume.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to parse resume.");
+    } finally {
+      setUploadingResume(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  const handleDeleteJob = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this application?")) return;
+    try {
+      await deleteJob(id);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete application.");
+    }
+  }
+
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: 'var(--text-muted)' }}>Loading your dashboard...</p>
+    <div className="min-h-screen flex items-center justify-center bg-white text-[#737373] text-sm">
+      <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+        Loading your workspace...
+      </motion.div>
     </div>
   )
 
   const statCards = [
-    { label: 'Applied', value: stats?.applied ?? 0, color: 'var(--accent)', bg: 'var(--accent-light)' },
-    { label: 'Interviews', value: stats?.interview ?? 0, color: 'var(--purple)', bg: 'var(--purple-light)' },
-    { label: 'Offers', value: stats?.offer ?? 0, color: 'var(--success)', bg: 'var(--success-light)' },
-    { label: 'Response Rate', value: `${stats?.response_rate ?? 0}%`, color: 'var(--warning)', bg: 'var(--warning-light)' },
+    { label: 'Applied', value: stats?.applied ?? 0 },
+    { label: 'Interviews', value: stats?.interview ?? 0 },
+    { label: 'Offers', value: stats?.offer ?? 0 },
+    { label: 'Response Rate', value: `${stats?.response_rate ?? 0}%` },
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="min-h-screen bg-white">
       <Navbar />
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+      <main className="max-w-[1100px] mx-auto px-6 py-12">
+        {/* Header Section */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>
-              Dashboard
-            </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '2px' }}>
-              Track and manage your job applications
-            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-[#111111]">Dashboard</h1>
+            <p className="text-[#737373] text-sm mt-1">Track and manage your career progress.</p>
           </div>
-          <button
-            onClick={() => setShowAddJob(true)}
-            style={{
-              padding: '10px 20px', borderRadius: '10px', background: 'var(--accent)',
-              color: 'white', fontWeight: 600, fontSize: '14px', border: 'none',
-              cursor: 'pointer', fontFamily: 'Geist, sans-serif',
-              boxShadow: '0 1px 3px rgba(37,99,235,0.3)'
-            }}
-          >
-            + Add Application
-          </button>
+          
+          <div className="flex gap-2">
+            <input type="file" accept=".pdf" ref={fileInputRef} onChange={handleResumeReupload} className="hidden" />
+            <button
+              onClick={() => fileInputRef.current.click()}
+              disabled={uploadingResume}
+              className="flex items-center gap-2 px-4 py-2 bg-[#f7f7f7] hover:bg-[#ededed] text-[#111111] text-sm font-medium rounded-full transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              {uploadingResume ? 'Parsing...' : 'Re-sync Resume'}
+            </button>
+            <button
+              onClick={() => setShowAddJob(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#111111] hover:bg-[#333333] text-white text-sm font-medium rounded-full transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Application
+            </button>
+          </div>
+        </header>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          {statCards.map((card, i) => (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              key={card.label} 
+              className="p-5 rounded-[16px] border border-[#ededed] bg-white flex flex-col gap-1 shadow-sm"
+            >
+              <div className="text-[#737373] text-[11px] font-semibold uppercase tracking-widest">{card.label}</div>
+              <div className="text-3xl font-medium tracking-tight text-[#111111]">{card.value}</div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Stat cards */}
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
-  {statCards.map(card => (
-    <StatCard
-      key={card.label}
-      label={card.label}
-      value={card.value}
-      color={card.color}
-      bg={card.bg}
-    />
-  ))}
-</div>
-
-        {/* Jobs list */}
-        <div style={{
-          background: 'white', borderRadius: '14px',
-          boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)',
-          overflow: 'hidden'
-        }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
-              Applications
-            </h2>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-              {jobs.length} total
-            </span>
+        {/* Jobs List */}
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+          className="border border-[#ededed] rounded-[16px] bg-white overflow-hidden shadow-sm"
+        >
+          <div className="px-6 py-4 border-b border-[#ededed] flex justify-between items-center text-sm font-medium text-[#111111]">
+            <span>Recent Applications</span>
+            <span className="text-[#737373] font-normal">{jobs.length} total</span>
           </div>
 
           {jobs.length === 0 ? (
-            <div style={{ padding: '60px', textAlign: 'center' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📋</div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>
-                No applications yet
-              </p>
-              <p style={{ color: 'var(--text-subtle)', fontSize: '13px', marginTop: '4px' }}>
-                Click "Add Application" to get started
-              </p>
+            <div className="p-20 text-center flex flex-col items-center">
+              <Target className="w-10 h-10 text-[#ededed] mb-4" />
+              <p className="text-[#111111] font-medium text-sm">No applications tracked yet</p>
+              <p className="text-[#737373] text-sm mt-1 text-balance">Click "Add Application" to start parsing jobs with AI.</p>
             </div>
           ) : (
-            jobs.map((job, i) => (
-              <div key={job.id} style={{
-                padding: '16px 24px',
-                borderBottom: i < jobs.length - 1 ? '1px solid var(--border)' : 'none',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                transition: 'background 0.1s'
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                onMouseLeave={e => e.currentTarget.style.background = 'white'}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{
-                    width: '40px', height: '40px', borderRadius: '10px',
-                    background: 'var(--accent-light)', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    fontSize: '16px', fontWeight: 700, color: 'var(--accent)',
-                    flexShrink: 0
-                  }}>
-                    {job.company[0]}
-                  </div>
-                  <div>
-                    <p style={{ fontWeight: 600, color: 'var(--text)', fontSize: '15px' }}>
-                      {job.company}
-                    </p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '1px' }}>
-                      {job.role} {job.platform && `· ${job.platform}`}
-                    </p>
-                  </div>
-                </div>
+            <div className="divide-y divide-[#ededed]">
+              <AnimatePresence>
+                {jobs.map((job) => (
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95, height: 0 }}
+                    key={job.id} 
+                    className="p-5 flex items-center justify-between group hover:bg-[#f7f7f7]/50 transition-colors"
+                  >
+                    <div className="flex gap-4 items-center">
+                      <div className="w-12 h-12 rounded-[12px] bg-[#f7f7f7] border border-[#ededed] flex items-center justify-center font-semibold text-[#111111] text-lg">
+                        {job.company[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-[#111111] text-[15px]">{job.company}</div>
+                        <div className="text-[#737373] text-[13px] mt-0.5">{job.role} {job.platform && `· ${job.platform}`}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      {job.match_score && (
+                        <div className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                          job.match_score >= 70 ? 'bg-[#f0fdf4] text-[#059669]' : 
+                          job.match_score >= 40 ? 'bg-[#fffbeb] text-[#d97706]' : 'bg-[#fef2f2] text-[#dc2626]'
+                        }`}>
+                          {job.match_score}% Match
+                        </div>
+                      )}
+                      
+                      <div className="px-3 py-1 rounded-full text-[12px] font-medium capitalize bg-[#f7f7f7] text-[#111111] border border-[#ededed]">
+                        {job.status}
+                      </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {job.match_score && (
-                    <span style={{
-                      fontSize: '13px', fontWeight: 600, padding: '4px 10px',
-                      borderRadius: '20px',
-                      background: job.match_score >= 70 ? 'var(--success-light)' : job.match_score >= 40 ? 'var(--warning-light)' : '#fef2f2',
-                      color: job.match_score >= 70 ? 'var(--success)' : job.match_score >= 40 ? 'var(--warning)' : 'var(--danger)'
-                    }}>
-                      {job.match_score}% match
-                    </span>
-                  )}
-                  <span style={{
-                    fontSize: '12px', fontWeight: 500, padding: '4px 12px',
-                    borderRadius: '20px', textTransform: 'capitalize',
-                    background: STATUS_STYLES[job.status]?.bg || '#f1f5f9',
-                    color: STATUS_STYLES[job.status]?.color || '#475569'
-                  }}>
-                    {job.status}
-                  </span>
-                </div>
-              </div>
-            ))
+                      <button
+                        onClick={() => handleDeleteJob(job.id)}
+                        className="p-1.5 text-[#a3a3a3] hover:text-[#dc2626] hover:bg-[#fef2f2] rounded-md transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           )}
-        </div>
-      </div>
+        </motion.div>
+      </main>
 
       {/* Add Job Modal */}
-      {showAddJob && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 200, padding: '24px'
-        }}>
-          <div style={{
-            background: 'white', borderRadius: '16px', padding: '28px',
-            width: '100%', maxWidth: '480px', boxShadow: 'var(--shadow-lg)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)' }}>
-                Add Application
-              </h3>
-              <button
-                onClick={() => setShowAddJob(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: 'var(--text-muted)' }}
-              >
-                ×
-              </button>
-            </div>
+      <AnimatePresence>
+        {showAddJob && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/10 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-[20px] p-7 w-full max-w-[500px] shadow-2xl border border-[#ededed]"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-[#111111]">New Application</h3>
+                <button onClick={() => setShowAddJob(false)} className="text-[#a3a3a3] hover:text-[#111111] p-1 bg-[#f7f7f7] rounded-full">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-              {[
-                { name: 'company', placeholder: 'Company name' },
-                { name: 'role', placeholder: 'Role / Position' },
-                { name: 'platform', placeholder: 'Platform' },
-                { name: 'location', placeholder: 'Location' },
-                { name: 'salary_range', placeholder: 'Salary range' },
-              ].map(field => (
-                <input
-                  key={field.name}
-                  placeholder={field.placeholder}
-                  value={newJob[field.name]}
-                  onChange={e => setNewJob({ ...newJob, [field.name]: e.target.value })}
-                  style={{
-                    padding: '10px 13px', borderRadius: '8px',
-                    border: '1.5px solid var(--border)', fontSize: '14px',
-                    outline: 'none', fontFamily: 'Geist, sans-serif',
-                    color: 'var(--text)'
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#2563eb'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              {/* Smart Paste */}
+              <div className="mb-6 bg-[#f7f7f7] p-5 rounded-[16px] border border-[#ededed]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-[#111111]" />
+                  <span className="text-[13px] font-semibold text-[#111111]">AI Smart Paste</span>
+                </div>
+                <textarea
+                  placeholder="Paste the raw job description here... we'll do the rest."
+                  value={pasteText} onChange={e => setPasteText(e.target.value)} rows={3}
+                  className="w-full p-3 rounded-[12px] border border-[#ededed] bg-white text-[13px] outline-none text-[#111111] resize-none mb-3 placeholder:text-[#a3a3a3] focus:border-[#a3a3a3] transition-colors"
                 />
-              ))}
-            </div>
+                <button
+                  onClick={handleParseJob} disabled={parsing || !pasteText}
+                  className="w-full py-2.5 rounded-[12px] bg-[#111111] disabled:bg-[#ededed] disabled:text-[#a3a3a3] text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
+                >
+                  {parsing ? 'Extracting with Gemini...' : 'Extract Details'}
+                </button>
+              </div>
 
-            <textarea
-              placeholder="Paste job description for AI match scoring (optional)"
-              value={newJob.job_description}
-              onChange={e => setNewJob({ ...newJob, job_description: e.target.value })}
-              rows={3}
-              style={{
-                width: '100%', padding: '10px 13px', borderRadius: '8px',
-                border: '1.5px solid var(--border)', fontSize: '14px',
-                outline: 'none', fontFamily: 'Geist, sans-serif',
-                color: 'var(--text)', resize: 'none', marginBottom: '16px'
-              }}
-              onFocus={e => e.target.style.borderColor = '#2563eb'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'}
-            />
+              {/* Form Fields */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {[
+                  { name: 'company', icon: Building2, ph: 'Company' },
+                  { name: 'role', icon: Target, ph: 'Role' },
+                  { name: 'location', icon: MapPin, ph: 'Location' },
+                  { name: 'salary_range', icon: DollarSign, ph: 'Salary' },
+                ].map(field => (
+                  <div key={field.name} className="relative">
+                    <field.icon className="w-4 h-4 absolute left-3 top-3 text-[#a3a3a3]" />
+                    <input
+                      placeholder={field.ph} value={newJob[field.name]}
+                      onChange={e => setNewJob({ ...newJob, [field.name]: e.target.value })}
+                      className="w-full pl-9 pr-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm text-[#111111] outline-none focus:border-[#a3a3a3] transition-colors placeholder:text-[#a3a3a3]"
+                    />
+                  </div>
+                ))}
+              </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+              <textarea
+                placeholder="Paste full job description for automated match scoring (optional)"
+                value={newJob.job_description} onChange={e => setNewJob({ ...newJob, job_description: e.target.value })} rows={2}
+                className="w-full p-3 rounded-[12px] border border-[#ededed] text-sm text-[#111111] outline-none resize-none mb-6 focus:border-[#a3a3a3] transition-colors placeholder:text-[#a3a3a3]"
+              />
+
               <button
-                onClick={() => setShowAddJob(false)}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: '8px',
-                  border: '1.5px solid var(--border)', background: 'white',
-                  color: 'var(--text-muted)', fontSize: '14px', cursor: 'pointer',
-                  fontFamily: 'Geist, sans-serif'
-                }}
+                onClick={handleAddJob} disabled={adding || !newJob.company || !newJob.role}
+                className="w-full py-3 rounded-[12px] bg-[#111111] disabled:bg-[#f7f7f7] disabled:text-[#a3a3a3] text-white font-semibold text-sm transition-all hover:bg-[#333333]"
               >
-                Cancel
+                {adding ? 'Saving...' : 'Save Application'}
               </button>
-              <button
-                onClick={handleAddJob}
-                disabled={adding || !newJob.company || !newJob.role}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: '8px',
-                  background: adding ? '#93c5fd' : 'var(--accent)',
-                  color: 'white', fontWeight: 600, fontSize: '14px',
-                  border: 'none', cursor: adding ? 'not-allowed' : 'pointer',
-                  fontFamily: 'Geist, sans-serif'
-                }}
-              >
-                {adding ? 'Adding...' : 'Add Application'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

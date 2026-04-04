@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
 import { getJobs, updateJobStatus, deleteJob } from '../services/api'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { motion } from 'framer-motion'
 import Navbar from '../components/Navbar'
 import JobCard from '../components/JobCard'
 
 const COLUMNS = [
-  { id: 'wishlist',  label: 'Wishlist',   color: '#64748b', bg: '#f1f5f9' },
-  { id: 'applied',   label: 'Applied',    color: '#2563eb', bg: '#eff6ff' },
-  { id: 'screening', label: 'Screening',  color: '#d97706', bg: '#fffbeb' },
-  { id: 'interview', label: 'Interview',  color: '#7c3aed', bg: '#f5f3ff' },
-  { id: 'offer',     label: 'Offer',      color: '#16a34a', bg: '#f0fdf4' },
-  { id: 'rejected',  label: 'Rejected',   color: '#dc2626', bg: '#fef2f2' },
+  { id: 'wishlist',  label: 'Wishlist' },
+  { id: 'applied',   label: 'Applied' },
+  { id: 'screening', label: 'Screening' },
+  { id: 'interview', label: 'Interview' },
+  { id: 'offer',     label: 'Offer' },
+  { id: 'rejected',  label: 'Rejected' },
 ]
 
 function Kanban() {
@@ -54,82 +55,44 @@ function Kanban() {
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh' }}>
-      <Navbar />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 60px)' }}>
-        <p style={{ color: 'var(--text-muted)' }}>Loading...</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-white text-[#737373] text-sm">
+      <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+        Loading board...
+      </motion.div>
     </div>
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="min-h-screen bg-white">
       <Navbar />
-
-      <div style={{ padding: '32px 24px' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>
-            Kanban Board
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '2px' }}>
-            Drag and drop to update application status
-          </p>
+      <div className="p-8 max-w-[1400px] mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold tracking-tight text-[#111111]">Board</h1>
+          <p className="text-[#737373] text-sm mt-1">Drag and drop to update application status</p>
         </div>
 
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div style={{ display: 'flex', gap: '14px', overflowX: 'auto', paddingBottom: '16px' }}>
+          <div className="flex gap-4 overflow-x-auto pb-4 items-start select-none">
             {COLUMNS.map(col => (
-              <div key={col.id} style={{ flexShrink: 0, width: '240px' }}>
-
-                {/* Column header */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  marginBottom: '10px', padding: '8px 12px', borderRadius: '8px',
-                  background: col.bg
-                }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: col.color }}>
-                    {col.label}
-                  </span>
-                  <span style={{
-                    fontSize: '11px', fontWeight: 600, background: 'white',
-                    color: col.color, padding: '2px 7px', borderRadius: '20px'
-                  }}>
+              <div key={col.id} className="w-[280px] shrink-0 flex flex-col bg-[#f7f7f7] rounded-[16px] border border-[#ededed] p-2">
+                <div className="px-3 py-2 flex items-center justify-between mb-2">
+                  <span className="text-[13px] font-semibold text-[#111111] uppercase tracking-wide">{col.label}</span>
+                  <span className="text-[11px] font-bold bg-white text-[#737373] px-2 py-0.5 rounded-full border border-[#ededed] shadow-sm">
                     {getJobsByStatus(col.id).length}
                   </span>
                 </div>
 
-                {/* Droppable column */}
                 <Droppable droppableId={col.id}>
                   {(provided, snapshot) => (
                     <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      style={{
-                        minHeight: '120px',
-                        borderRadius: '10px',
-                        padding: '4px',
-                        background: snapshot.isDraggingOver ? col.bg : 'transparent',
-                        transition: 'background 0.15s'
-                      }}
+                      ref={provided.innerRef} {...provided.droppableProps}
+                      className={`min-h-[150px] rounded-[12px] p-2 transition-colors ${snapshot.isDraggingOver ? 'bg-[#ededed]/50' : 'bg-transparent'}`}
                     >
                       {getJobsByStatus(col.id).map((job, index) => (
-                        <Draggable
-                          key={job.id}
-                          draggableId={String(job.id)}
-                          index={index}
-                        >
+                        <Draggable key={job.id} draggableId={String(job.id)} index={index}>
                           {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              style={{ ...provided.draggableProps.style }}
-                            >
-                              <JobCard
-                                job={job}
-                                onDelete={handleDelete}
-                                dragging={snapshot.isDragging}
-                              />
+                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="mb-2 outline-none">
+                              <JobCard job={job} onDelete={handleDelete} dragging={snapshot.isDragging} />
                             </div>
                           )}
                         </Draggable>
@@ -138,7 +101,6 @@ function Kanban() {
                     </div>
                   )}
                 </Droppable>
-
               </div>
             ))}
           </div>

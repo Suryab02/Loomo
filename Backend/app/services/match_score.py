@@ -23,4 +23,7 @@ def calculate_match(user_skills: str, job_description: str) -> dict:
     """
     
     response = model.generate_content(prompt)
-    return json.loads(response.text)
+    
+    # Clean the response to ensure valid JSON (remove markdown ticks)
+    cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
+    return json.loads(cleaned_text)

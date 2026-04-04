@@ -5,6 +5,7 @@ import { getStats, getPlatforms, getKeywords } from '../services/api'
 import Navbar from '../components/Navbar'
 import StatCard from '../components/StatCard'
 import AgentChatBox from '../components/AgentChatBox'
+import { InsightsSkeleton } from '../components/PageSkeleton'
 
 function Insights() {
   const [stats, setStats] = useState(null)
@@ -17,7 +18,7 @@ function Insights() {
   const fetchData = async () => {
     try {
       const [statsRes, platformsRes, keywordsRes] = await Promise.all([
-        getStats(), getPlatforms(), getKeywords()
+        getStats(), getPlatforms(), getKeywords(),
       ])
       setStats(statsRes.data)
       setPlatforms(Object.entries(platformsRes.data).map(([name, count]) => ({ name, count })))
@@ -29,19 +30,15 @@ function Insights() {
     }
   }
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white text-[#737373] text-sm">
-      <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-        Loading insights...
-      </motion.div>
-    </div>
-  )
+  if (loading) return <InsightsSkeleton />
 
   const statCards = [
-    { label: 'Total Applied', value: stats?.applied ?? 0 },
+    { label: 'Wishlist', value: stats?.wishlist ?? 0 },
+    { label: 'Applied', value: stats?.applied ?? 0 },
+    { label: 'Wishlist → Applied', value: `${stats?.wishlist_to_applied_rate ?? 0}%` },
+    { label: 'Response Rate', value: `${stats?.response_rate ?? 0}%` },
     { label: 'Interviews', value: stats?.interview ?? 0 },
     { label: 'Offers', value: stats?.offer ?? 0 },
-    { label: 'Response Rate', value: `${stats?.response_rate ?? 0}%` },
   ]
 
   return (
@@ -51,19 +48,18 @@ function Insights() {
       <main className="max-w-[1100px] mx-auto px-6 py-12">
         <div className="mb-10">
           <h1 className="text-3xl font-semibold tracking-tight text-[#111111]">Insights</h1>
-          <p className="text-[#737373] text-sm mt-1">Analytics on your job hunt performance</p>
+          <p className="text-[#737373] text-sm mt-1">Pipeline health, platforms, and skill gaps</p>
         </div>
 
         <AgentChatBox />
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            {statCards.map((card, i) => (
-              <StatCard key={card.label} label={card.label} value={card.value} index={i} />
-            ))}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
+          {statCards.map((card, i) => (
+            <StatCard key={card.label} label={card.label} value={card.value} index={i} />
+          ))}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Platform chart */}
           <div className="bg-white rounded-[16px] p-6 border border-[#ededed] shadow-sm">
             <h3 className="text-[15px] font-semibold text-[#111111] mb-8">Applications by Platform</h3>
             {platforms.length === 0 ? (
@@ -83,7 +79,6 @@ function Insights() {
             )}
           </div>
 
-          {/* Keyword Gaps */}
           <div className="bg-white rounded-[16px] p-6 border border-[#ededed] shadow-sm">
             <h3 className="text-[15px] font-semibold text-[#111111] mb-6">Top Skill Gaps</h3>
             {keywords.length === 0 ? (
@@ -97,9 +92,9 @@ function Insights() {
                       <span className="text-[12px] text-[#737373]">{kw.count} missed jobs</span>
                     </div>
                     <div className="h-[5px] bg-[#f7f7f7] rounded-full overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${(kw.count / keywords[0].count) * 100}%` }}
+                        animate={{ width: `${keywords[0].count ? (kw.count / keywords[0].count) * 100 : 0}%` }}
                         transition={{ duration: 1, ease: 'easeOut', delay: i * 0.1 }}
                         className="h-full bg-[#111111] rounded-full"
                       />

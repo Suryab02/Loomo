@@ -1,7 +1,14 @@
-import { motion } from 'framer-motion'
-import { Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react';
+import type { Job } from '../types';
 
-function JobCard({ job, onDelete, dragging = false, accentColor = '#ededed' }) {
+interface JobCardProps {
+  job: Job;
+  onDelete?: (id: number) => void;
+  dragging?: boolean;
+  accentColor?: string;
+}
+
+function JobCard({ job, onDelete, dragging = false, accentColor = '#ededed' }: JobCardProps) {
   return (
     <div 
       className={`group relative bg-white rounded-[20px] p-5 text-left transition-all ${
@@ -46,4 +53,4 @@ function JobCard({ job, onDelete, dragging = false, accentColor = '#ededed' }) {
   )
 }
 
-export default JobCard
+export default JobCard;

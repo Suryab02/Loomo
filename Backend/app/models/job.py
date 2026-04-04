@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -28,6 +28,8 @@ class Job(Base):
     # Tracking
     applied_date = Column(DateTime(timezone=True))
     follow_up_date = Column(DateTime(timezone=True))
+    follow_up_snooze_until = Column(DateTime(timezone=True), nullable=True)
+    follow_up_contacted = Column(Boolean, default=False)
     notes = Column(Text)
     contact_name = Column(String)
     contact_email = Column(String)

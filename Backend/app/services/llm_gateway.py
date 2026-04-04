@@ -19,9 +19,11 @@ def chat_completion(messages, tools=None, tool_choice=None, response_format=None
     model = os.getenv("LLM_MODEL", "gemini/gemini-1.5-flash")
 
     try:
+        max_tokens = int(os.getenv("LLM_MAX_TOKENS", "2048"))
         kwargs = {
             "model": model,
             "messages": messages,
+            "max_tokens": max_tokens,
         }
         
         if tools:

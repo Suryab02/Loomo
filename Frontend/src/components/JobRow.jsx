@@ -1,14 +1,18 @@
 import { motion } from 'framer-motion'
 import { Trash2, FileText, Loader2 } from 'lucide-react'
 
-export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating }) {
+export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, onOpen }) {
   return (
     <motion.div 
       layout
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95, height: 0 }}
-      className="p-5 flex items-center justify-between group hover:bg-[#f7f7f7]/50 transition-colors"
+      className="p-5 flex items-center justify-between group hover:bg-[#f7f7f7]/50 transition-colors cursor-pointer"
+      onClick={() => onOpen?.(job)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(job) } }}
     >
       <div className="flex gap-4 items-center">
         <div className="w-12 h-12 rounded-[12px] bg-[#f7f7f7] border border-[#ededed] flex items-center justify-center font-semibold text-[#111111] text-lg">
@@ -35,7 +39,7 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating }
         </div>
 
         <button
-          onClick={() => onGenerateLetter(job.id)}
+          onClick={(e) => { e.stopPropagation(); onGenerateLetter(job.id) }}
           disabled={isGenerating}
           className="p-1.5 text-[#a3a3a3] hover:text-[#6d28d9] hover:bg-[#f5f3ff] rounded-md transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
           title="Draft Cover Letter"
@@ -44,7 +48,7 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating }
         </button>
 
         <button
-          onClick={() => onDelete(job.id)}
+          onClick={(e) => { e.stopPropagation(); onDelete(job.id) }}
           className="p-1.5 text-[#a3a3a3] hover:text-[#dc2626] hover:bg-[#fef2f2] rounded-md transition-all opacity-0 group-hover:opacity-100"
           title="Delete"
         >

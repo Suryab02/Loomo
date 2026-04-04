@@ -7,7 +7,13 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL)
+# Neon and most hosted Postgres URLs include ?sslmode=require in DATABASE_URL.
+# If yours does not, set DATABASE_SSL=require (or true) so psycopg2 negotiates TLS.
+_connect_args = {}
+if os.getenv("DATABASE_SSL", "").lower() in ("1", "true", "yes", "require"):
+    _connect_args["sslmode"] = "require"
+
+engine = create_engine(DATABASE_URL, connect_args=_connect_args or {})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

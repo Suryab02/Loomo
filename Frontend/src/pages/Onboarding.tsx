@@ -2,7 +2,8 @@ import { useState, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Orbit, Upload, CheckCircle2 } from 'lucide-react';
-import { uploadResume, savePreferences } from '../services/api';
+import { useSavePreferencesMutation, useUploadResumeMutation } from '../store/apiSlice';
+import { getErrorMessage } from '../lib/apiError';
 
 interface ResumeData {
   current_role?: string;
@@ -32,6 +33,8 @@ function Onboarding() {
     target_role: '', work_type: 'remote', target_location: '',
     expected_ctc: '', notice_period: '', platforms: ''
   });
+  const [uploadResume, { isLoading: uploadingResume }] = useUploadResumeMutation();
+  const [savePreferences, { isLoading: savingPreferences }] = useSavePreferencesMutation();
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -44,11 +47,11 @@ function Onboarding() {
     setLoading(true);
     setError('');
     try {
-      const res = await uploadResume(file);
-      setResumeData(res.data);
+      const res = await uploadResume(file).unwrap();
+      setResumeData(res as ResumeData);
       setStep(2);
-    } catch {
-      setError('Failed to parse resume. Please try again.');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to parse resume. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -60,10 +63,10 @@ function Onboarding() {
     setLoading(true);
     setError('');
     try {
-      await savePreferences(prefs);
+      await savePreferences(prefs).unwrap();
       setStep(3);
-    } catch {
-      setError('Failed to save preferences.');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to save preferences.'));
     } finally {
       setLoading(false);
     }
@@ -121,10 +124,10 @@ function Onboarding() {
               </label>
 
               <button
-                onClick={handleUploadResume} disabled={!file || loading}
+                onClick={handleUploadResume} disabled={!file || loading || uploadingResume}
                 className="w-full py-3 rounded-[12px] bg-[#6d28d9] disabled:bg-[#ededed] disabled:text-[#a3a3a3] text-white font-medium text-[15px] transition-all hover:bg-[#5b21b6]"
               >
-                {loading ? 'Analyzing with AI...' : 'Continue'}
+                {loading || uploadingResume ? 'Analyzing with AI...' : 'Continue'}
               </button>
             </motion.div>
           )}
@@ -167,10 +170,10 @@ function Onboarding() {
               </div>
 
               <button
-                onClick={handleSavePrefs} disabled={loading}
+                onClick={handleSavePrefs} disabled={loading || savingPreferences}
                 className="w-full py-3 rounded-[12px] bg-[#6d28d9] disabled:bg-[#ededed] disabled:text-[#a3a3a3] text-white font-medium text-[15px] transition-all hover:bg-[#5b21b6]"
               >
-                {loading ? 'Saving...' : 'Complete Setup'}
+                {loading || savingPreferences ? 'Saving...' : 'Complete Setup'}
               </button>
             </motion.div>
           )}

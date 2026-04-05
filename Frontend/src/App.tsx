@@ -6,11 +6,28 @@ import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Kanban from './pages/Kanban'
 import Insights from './pages/Insights'
+import Settings from './pages/Settings'
+import { useGetMeQuery } from './store/apiSlice'
+import { clearSession, getToken } from './lib/auth'
 
-// Protected route — redirects to login if no token
 function PrivateRoute({ children }: { children: ReactNode }) {
-  const token = localStorage.getItem('token')
-  return token ? children : <Navigate to="/login" />
+  const token = getToken()
+  const { isLoading, isError } = useGetMeQuery(undefined, { skip: !token })
+
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-white" />
+  }
+
+  if (isError) {
+    clearSession()
+    return <Navigate to="/login" replace />
+  }
+
+  return children
 }
 
 function App() {
@@ -30,6 +47,9 @@ function App() {
         } />
         <Route path="/insights" element={
           <PrivateRoute><Insights /></PrivateRoute>
+        } />
+        <Route path="/settings" element={
+          <PrivateRoute><Settings /></PrivateRoute>
         } />
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>

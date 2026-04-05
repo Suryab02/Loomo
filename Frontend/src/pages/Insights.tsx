@@ -1,45 +1,19 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { getStats, getPlatforms, getKeywords } from '../services/api';
+import { useGetKeywordsQuery, useGetPlatformsQuery, useGetStatsQuery } from '../store/apiSlice';
 import Navbar from '../components/Navbar';
 import StatCard from '../components/StatCard';
 import AgentChatBox from '../components/AgentChatBox';
 import { InsightsSkeleton } from '../components/PageSkeleton';
-import { Stats } from '../types';
-
-interface PlatformData {
-  name: string;
-  count: number;
-}
-
-interface KeywordGap {
-  skill: string;
-  count: number;
-}
+import { KeywordGap } from '../types';
 
 function Insights() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [platforms, setPlatforms] = useState<PlatformData[]>([]);
-  const [keywords, setKeywords] = useState<KeywordGap[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => { fetchData(); }, []);
-
-  const fetchData = async () => {
-    try {
-      const [statsRes, platformsRes, keywordsRes] = await Promise.all([
-        getStats(), getPlatforms(), getKeywords(),
-      ]);
-      setStats(statsRes.data);
-      setPlatforms(Object.entries(platformsRes.data as Record<string, number>).map(([name, count]) => ({ name, count })));
-      setKeywords(keywordsRes.data.keyword_gaps || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: stats, isLoading: statsLoading } = useGetStatsQuery();
+  const { data: platformMap, isLoading: platformsLoading } = useGetPlatformsQuery();
+  const { data: keywordsData, isLoading: keywordsLoading } = useGetKeywordsQuery();
+  const platforms = Object.entries(platformMap || {}).map(([name, count]) => ({ name, count }));
+  const keywords: KeywordGap[] = keywordsData?.keyword_gaps || [];
+  const loading = statsLoading || platformsLoading || keywordsLoading;
 
   if (loading) return <InsightsSkeleton />;
 

@@ -8,7 +8,15 @@ interface JobCardProps {
   accentColor?: string;
 }
 
+function getMatchScore(value: Job['match_score']) {
+  if (value === null || value === undefined || value === '') return null;
+  const score = Number(value);
+  return Number.isFinite(score) ? score : null;
+}
+
 function JobCard({ job, onDelete, dragging = false, accentColor = '#ededed' }: JobCardProps) {
+  const matchScore = getMatchScore(job.match_score);
+
   return (
     <div 
       className={`group relative bg-white rounded-[20px] p-5 text-left transition-all ${
@@ -36,12 +44,12 @@ function JobCard({ job, onDelete, dragging = false, accentColor = '#ededed' }: J
       </div>
 
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#f7f7f7]">
-        {job.match_score ? (
+        {matchScore !== null ? (
           <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-            job.match_score >= 70 ? 'bg-[#f0fdf4] text-[#059669]' : 
-            job.match_score >= 40 ? 'bg-[#fffbeb] text-[#d97706]' : 'bg-[#fef2f2] text-[#dc2626]'
+            matchScore >= 70 ? 'bg-[#f0fdf4] text-[#059669]' : 
+            matchScore >= 40 ? 'bg-[#fffbeb] text-[#d97706]' : 'bg-[#fef2f2] text-[#dc2626]'
           }`}>
-            {job.match_score}% MATCH
+            {matchScore}% MATCH
           </div>
         ) : <div />}
         

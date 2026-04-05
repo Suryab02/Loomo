@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
 import { Sparkles, X, Building2, MapPin, DollarSign, Target, Loader2, Link2 } from 'lucide-react';
 import { useState, Dispatch, SetStateAction } from 'react';
-import { parseJobUrl } from '../services/api';
 import { Job } from '../types';
+import { useParseJobUrlMutation } from '../store/apiSlice';
+import { getErrorMessage } from '../lib/apiError';
 
 interface AddJobModalProps {
   onClose: () => void;
@@ -30,26 +31,21 @@ export default function AddJobModal({
   toast,
 }: AddJobModalProps) {
   const [jobUrl, setJobUrl] = useState('');
-  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [parseJobUrl, { isLoading: fetchingUrl }] = useParseJobUrlMutation();
 
   const handleFetchUrl = async () => {
     if (!jobUrl.trim()) return;
-    setFetchingUrl(true);
     try {
-      const res = await parseJobUrl({ url: jobUrl.trim() });
+      const res = await parseJobUrl({ url: jobUrl.trim() }).unwrap();
       setNewJob((prev) => ({
         ...prev,
-        ...res.data,
+        ...res,
         job_url: jobUrl.trim(),
-        job_description: prev.job_description || res.data.job_description || '',
+        job_description: prev.job_description || res.job_description || '',
       }));
       toast?.('Loaded details from URL — review before saving.', 'success');
-    } catch (e: any) {
-      console.error(e);
-      const d = e.response?.data?.detail;
-      toast?.(typeof d === 'string' ? d : 'Could not parse this URL. Paste the description instead.', 'error');
-    } finally {
-      setFetchingUrl(false);
+    } catch (e) {
+      toast?.(getErrorMessage(e, 'Could not parse this URL. Paste the description instead.'), 'error');
     }
   };
 

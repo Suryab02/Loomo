@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getJobs, updateJobStatus, deleteJob } from '../services/api';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { motion } from 'framer-motion';
 import { Loader2, Search } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import JobCard from '../components/JobCard';
 import { Job, JobStatus } from '../types';
+import { useDeleteJobMutation, useGetJobsQuery, useUpdateJobStatusMutation } from '../store/apiSlice';
 
 interface Column {
   id: JobStatus;
@@ -25,22 +25,14 @@ const COLUMNS: Column[] = [
 
 function Kanban() {
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterQ, setFilterQ] = useState('');
+  const { data, isLoading: loading, refetch } = useGetJobsQuery({ per_page: 500, sort: 'created_at', order: 'desc' });
+  const [updateJobStatus] = useUpdateJobStatusMutation();
+  const [deleteJob] = useDeleteJobMutation();
 
-  useEffect(() => { fetchJobs(); }, []);
-
-  const fetchJobs = async () => {
-    try {
-      const res = await getJobs({ per_page: 500, sort: 'created_at', order: 'desc' });
-      const jd = res.data;
-      setJobs(Array.isArray(jd) ? jd : (jd.items || []));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    setJobs(data?.items || []);
+  }, [data]);
 
   const filteredJobs = useMemo(() => {
     const q = filterQ.trim().toLowerCase();
@@ -62,15 +54,15 @@ function Kanban() {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j)));
     
     try {
-      await updateJobStatus(jobId, newStatus);
+      await updateJobStatus({ id: jobId, status: newStatus }).unwrap();
     } catch {
-      fetchJobs();
+      refetch();
     }
   };
 
   const handleDelete = async (jobId: number) => {
     try {
-      await deleteJob(jobId);
+      await deleteJob(jobId).unwrap();
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
     } catch (err) {
       console.error(err);
@@ -91,7 +83,7 @@ function Kanban() {
 
         <button
           type="button"
-          onClick={fetchJobs}
+          onClick={refetch}
           className="mt-6 text-[10px] font-bold text-[#111111] underline underline-offset-4 hover:text-[#737373] transition-colors"
         >
           Taking too long? Sync data

@@ -245,10 +245,12 @@ def sync_gmail(
     try:
         gmail_jobs = get_gmail_jobs()
         if isinstance(gmail_jobs, dict) and "error" in gmail_jobs:
-            return gmail_jobs
+            raise HTTPException(status_code=400, detail=gmail_jobs["error"])
         return {"jobs_found": gmail_jobs}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail="Gmail sync failed")
 
 
 @router.get("/{job_id}")

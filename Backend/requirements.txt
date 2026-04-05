@@ -14,3 +14,4 @@ litellm==1.83.2
 gunicorn==25.3.0
 httpx
 beautifulsoup4
+pytest==8.3.5

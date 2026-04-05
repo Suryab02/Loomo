@@ -23,6 +23,7 @@ class User(Base):
     expected_ctc = Column(String)
     notice_period = Column(String)
     platforms = Column(String)  # comma separated
+    gemini_api_key = Column(String, nullable=True) # User's own AI key for parsing
 
     # Meta
     onboarding_complete = Column(Boolean, default=False)

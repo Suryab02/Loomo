@@ -2,13 +2,15 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Orbit, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
-import { login } from '../services/api';
+import { useLoginMutation } from '../store/apiSlice';
+import { saveToken } from '../lib/auth';
+import { getErrorMessage } from '../lib/apiError';
 
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [login, { isLoading: loading }] = useLoginMutation();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,16 +18,13 @@ export default function Login() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
     try {
-      const res = await login(form);
-      localStorage.setItem('token', res.data.access_token);
+      const res = await login(form).unwrap();
+      saveToken(res.access_token);
       navigate('/dashboard');
-    } catch {
-      setError('Invalid email or password. Please try again.');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Invalid email or password. Please try again.'));
     }
   };
 

@@ -10,7 +10,15 @@ interface JobRowProps {
   onOpen?: (job: Job) => void;
 }
 
+function getMatchScore(value: Job['match_score']) {
+  if (value === null || value === undefined || value === '') return null;
+  const score = Number(value);
+  return Number.isFinite(score) ? score : null;
+}
+
 export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, onOpen }: JobRowProps) {
+  const matchScore = getMatchScore(job.match_score);
+
   return (
     <motion.div 
       layout
@@ -34,12 +42,12 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, 
       </div>
       
       <div className="flex items-center gap-3">
-        {job.match_score !== undefined && (
+        {matchScore !== null && (
           <div className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-            job.match_score >= 70 ? 'bg-[#f0fdf4] text-[#059669]' : 
-            job.match_score >= 40 ? 'bg-[#fffbeb] text-[#d97706]' : 'bg-[#fef2f2] text-[#dc2626]'
+            matchScore >= 70 ? 'bg-[#f0fdf4] text-[#059669]' : 
+            matchScore >= 40 ? 'bg-[#fffbeb] text-[#d97706]' : 'bg-[#fef2f2] text-[#dc2626]'
           }`}>
-            {job.match_score}% Match
+            {matchScore}% Match
           </div>
         )}
         

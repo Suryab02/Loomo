@@ -7,12 +7,14 @@ import {
   useGetRemindersQuery,
   useAddJobMutation,
   useDeleteJobMutation,
+  useParseJobTextMutation,
+  useUploadResumeMutation,
+  useSnoozeReminderMutation,
+  useMarkReminderContactedMutation,
   useSyncGmailMutation,
   useGenerateCoverLetterMutation,
   useGenerateFollowUpMutation,
-  // These might need addition to apiSlice or used from api directly for specialized cases
 } from '../store/apiSlice';
-import { parseJobText, uploadResume, snoozeReminder, markReminderContacted } from '../services/api';
 import Navbar from '../components/Navbar';
 import StatCard from '../components/StatCard';
 import JobRow from '../components/JobRow';
@@ -21,6 +23,7 @@ import JobDetailPanel from '../components/JobDetailPanel';
 import { DashboardSkeleton } from '../components/PageSkeleton';
 import { useToast } from '../context/ToastContext';
 import type { Job, JobStatus } from '../types';
+import { getErrorMessage } from '../lib/apiError';
 
 interface ListParams {
   q: string;
@@ -51,12 +54,16 @@ function Dashboard() {
 
   // RTK Query hooks
   const { data: stats, isLoading: statsLoading } = useGetStatsQuery();
-  const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useGetJobsQuery(listParams);
-  const { data: reminders = [], isLoading: remindersLoading } = useGetRemindersQuery();
+  const { data: jobsData, isLoading: jobsLoading } = useGetJobsQuery(listParams);
+  const { data: reminders = [] } = useGetRemindersQuery();
 
   // Mutations
   const [addJob] = useAddJobMutation();
   const [deleteJob] = useDeleteJobMutation();
+  const [parseJobText, { isLoading: parsing }] = useParseJobTextMutation();
+  const [uploadResume] = useUploadResumeMutation();
+  const [snoozeReminder] = useSnoozeReminderMutation();
+  const [markReminderContacted] = useMarkReminderContactedMutation();
   const [syncGmail, { isLoading: syncingGmail }] = useSyncGmailMutation();
   const [generateCoverLetter, { isLoading: generatingLetter }] = useGenerateCoverLetterMutation();
   const [generateFollowUp] = useGenerateFollowUpMutation();
@@ -65,7 +72,6 @@ function Dashboard() {
   const [foundJobs, setFoundJobs] = useState<Partial<Job>[]>([]);
   const [showAddJob, setShowAddJob] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [parsing, setParsing] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [uploadingResume, setUploadingResume] = useState(false);
   const [newJob, setNewJob] = useState<Partial<Job>>({
@@ -86,17 +92,13 @@ function Dashboard() {
 
   const handleParseJob = async () => {
     if (!pasteText) return;
-    setParsing(true);
     try {
-      const res = await parseJobText({ text: pasteText });
-      setNewJob((prev) => ({ ...prev, ...res.data, job_description: pasteText }));
+      const res = await parseJobText({ text: pasteText }).unwrap();
+      setNewJob((prev) => ({ ...prev, ...res, job_description: pasteText }));
       setPasteText('');
       toast('Job details extracted', 'success');
     } catch (err) {
-      console.error(err);
-      toast('Failed to parse the job text.', 'error');
-    } finally {
-      setParsing(false);
+      toast(getErrorMessage(err, 'Failed to parse the job text.'), 'error');
     }
   };
 
@@ -107,10 +109,8 @@ function Dashboard() {
       setShowAddJob(false);
       setNewJob({ company: '', role: '', job_description: '', platform: '', location: '', salary_range: '', job_url: '' });
       toast('Application saved', 'success');
-    } catch (err: any) {
-      console.error(err);
-      const d = err.data?.detail || err.message;
-      toast(typeof d === 'string' ? d : 'Could not save application', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Could not save application'), 'error');
     } finally {
       setAdding(false);
     }
@@ -121,11 +121,10 @@ function Dashboard() {
     if (!file) return;
     setUploadingResume(true);
     try {
-      await uploadResume(file);
+      await uploadResume(file).unwrap();
       toast('Resume processed — skills updated.', 'success');
     } catch (err) {
-      console.error(err);
-      toast('Failed to parse resume.', 'error');
+      toast(getErrorMessage(err, 'Failed to parse resume.'), 'error');
     } finally {
       setUploadingResume(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -138,8 +137,7 @@ function Dashboard() {
       await deleteJob(id).unwrap();
       toast('Application removed', 'success');
     } catch (err) {
-      console.error(err);
-      toast('Failed to delete application.', 'error');
+      toast(getErrorMessage(err, 'Failed to delete application.'), 'error');
     }
   };
 
@@ -149,8 +147,7 @@ function Dashboard() {
       const res = await generateCoverLetter(id).unwrap();
       setGeneratedLetter(res.cover_letter);
     } catch (err) {
-      console.error(err);
-      toast('Failed to generate cover letter. Ensure the job has a description.', 'error');
+      toast(getErrorMessage(err, 'Failed to generate cover letter. Ensure the job has a description.'), 'error');
     }
   };
 
@@ -160,23 +157,17 @@ function Dashboard() {
       const res = await generateFollowUp(id).unwrap();
       setGeneratedLetter(res.follow_up_email);
     } catch (err) {
-      console.error(err);
-      toast('Failed to generate follow-up email.', 'error');
+      toast(getErrorMessage(err, 'Failed to generate follow-up email.'), 'error');
     }
   };
 
   const handleSyncGmail = async () => {
     try {
       const res = await syncGmail().unwrap();
-      if (res.error) {
-        toast(res.error, 'error');
-      } else {
-        setFoundJobs(res.jobs_found || []);
-        toast(`Found ${(res.jobs_found || []).length} message(s). Review and import.`, 'success');
-      }
+      setFoundJobs(res.jobs_found || []);
+      toast(`Found ${(res.jobs_found || []).length} message(s). Review and import.`, 'success');
     } catch (err) {
-      console.error(err);
-      toast('Gmail sync failed', 'error');
+      toast(getErrorMessage(err, 'Gmail sync failed'), 'error');
     }
   };
 
@@ -186,31 +177,26 @@ function Dashboard() {
       await addJob(job).unwrap();
       setFoundJobs((prev) => prev.filter((_, i) => i !== jobIndex));
       toast('Imported from Gmail', 'success');
-    } catch (err: any) {
-      const d = err.data?.detail || err.message;
-      toast(typeof d === 'string' ? d : 'Could not import job', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Could not import job'), 'error');
     }
   };
 
   const handleSnooze = async (jobId: number) => {
     try {
-      await snoozeReminder(jobId, 7);
+      await snoozeReminder({ id: jobId, days: 7 }).unwrap();
       toast('Reminder snoozed 7 days', 'success');
-      // Note: Re-adding manual refetch for non-RTK query calls if needed, 
-      // but ideally this should also be a mutation in apiSlice.
-      refetchJobs(); 
     } catch (e) {
-      toast('Could not snooze', 'error');
+      toast(getErrorMessage(e, 'Could not snooze'), 'error');
     }
   };
 
   const handleContacted = async (jobId: number) => {
     try {
-      await markReminderContacted(jobId);
+      await markReminderContacted(jobId).unwrap();
       toast('Marked as contacted', 'success');
-      refetchJobs();
     } catch (e) {
-      toast('Could not update', 'error');
+      toast(getErrorMessage(e, 'Could not update'), 'error');
     }
   };
 
@@ -516,7 +502,7 @@ function Dashboard() {
           <JobDetailPanel
             job={selectedJob}
             onClose={() => setSelectedJob(null)}
-            onSaved={refetchJobs}
+            onSaved={() => setSelectedJob(null)}
             toast={toast}
           />
         )}

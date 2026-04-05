@@ -32,6 +32,16 @@ LLM_MODEL=gemini/gemini-1.5-flash  # Switch models anytime without restart
 python -m uvicorn app.main:app --reload
 ```
 
+### 4. Run Migrations
+```bash
+alembic upgrade head
+```
+
+### 5. Run Tests
+```bash
+pytest tests
+```
+
 ## 📚 API Endpoints
 *   **Interactive Docs**: http://127.0.0.1:8000/docs
 *   **Base URL**: http://127.0.0.1:8000

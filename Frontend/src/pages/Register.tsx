@@ -2,13 +2,15 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Orbit, User, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
-import { register } from '../services/api';
+import { useRegisterMutation } from '../store/apiSlice';
+import { saveToken } from '../lib/auth';
+import { getErrorMessage } from '../lib/apiError';
 
 export default function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '', full_name: '' });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [register, { isLoading: loading }] = useRegisterMutation();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,16 +18,13 @@ export default function Register() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
     try {
-      const res = await register(form);
-      localStorage.setItem('token', res.data.access_token);
+      const res = await register(form).unwrap();
+      saveToken(res.access_token);
       navigate('/onboarding');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
     }
   };
 

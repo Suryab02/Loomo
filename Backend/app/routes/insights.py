@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -282,7 +282,9 @@ def generate_cover_letter(
 ):
     job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
     if not job:
-        return {"error": "Job not found"}
+        raise HTTPException(status_code=404, detail="Job not found")
+    if not (job.job_description or "").strip():
+        raise HTTPException(status_code=400, detail="Add a job description before generating a cover letter.")
 
     skills = current_user.skills or "Experienced Professional"
     target = current_user.target_role or job.role
@@ -317,8 +319,8 @@ def generate_cover_letter(
     try:
         response = chat_completion(messages)
         return {"cover_letter": response.choices[0].message.content}
-    except Exception as e:
-        return {"error": f"Failed to generate cover letter: {str(e)}"}
+    except Exception:
+        raise HTTPException(status_code=502, detail="Failed to generate cover letter")
 
 
 @router.post("/follow-up-email/{job_id}")
@@ -329,7 +331,7 @@ def generate_followup_email(
 ):
     job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
     if not job:
-        return {"error": "Job not found"}
+        raise HTTPException(status_code=404, detail="Job not found")
 
     name = current_user.full_name or "Professional Candidate"
 
@@ -361,5 +363,5 @@ def generate_followup_email(
     try:
         response = chat_completion(messages)
         return {"follow_up_email": response.choices[0].message.content}
-    except Exception as e:
-        return {"error": f"Failed to generate follow-up: {str(e)}"}
+    except Exception:
+        raise HTTPException(status_code=502, detail="Failed to generate follow-up email")

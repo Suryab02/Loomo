@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Trello, LineChart, LogOut, Orbit, LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Trello, LineChart, LogOut, Orbit, LucideIcon, Settings } from 'lucide-react';
+import { clearSession } from '../lib/auth';
 
 interface NavLink {
   path: string;
@@ -12,6 +13,7 @@ const links: NavLink[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/kanban', label: 'Kanban', icon: Trello },
   { path: '/insights', label: 'Insights', icon: LineChart },
+  { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
 function Navbar() {
@@ -19,7 +21,7 @@ function Navbar() {
   const location = useLocation();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    clearSession();
     navigate('/login');
   };
 

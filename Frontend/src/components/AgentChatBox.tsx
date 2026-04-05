@@ -1,31 +1,27 @@
 import { useState, FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { BrainCircuit } from 'lucide-react';
-import { askAgent } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useAskAgentMutation } from '../store/apiSlice';
+import { getErrorMessage } from '../lib/apiError';
 
 export default function AgentChatBox() {
   const { toast } = useToast();
   const [chatQuery, setChatQuery] = useState('');
   const [chatReply, setChatReply] = useState('');
-  const [chatting, setChatting] = useState(false);
+  const [askAgent, { isLoading: chatting }] = useAskAgentMutation();
 
   const handleChat = async (e: FormEvent) => {
     e.preventDefault();
     if (!chatQuery) return;
-    setChatting(true);
     setChatReply('');
     try {
-      const res = await askAgent(chatQuery);
-      setChatReply(res.data.reply);
-    } catch (err: any) {
-      const msg = err.response?.status === 429
-        ? 'Too many AI requests. Wait a minute and try again.'
-        : 'Could not reach the agent.';
+      const res = await askAgent(chatQuery).unwrap();
+      setChatReply(res.reply);
+    } catch (err) {
+      const msg = getErrorMessage(err, 'Could not reach the agent.');
       setChatReply(msg);
       toast(msg, 'error');
-    } finally {
-      setChatting(false);
     }
   };
 

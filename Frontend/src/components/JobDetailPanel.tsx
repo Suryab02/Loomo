@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Loader2, RefreshCw } from 'lucide-react';
-import { patchJob } from '../services/api';
 import { Job, JobStatus } from '../types';
+import { usePatchJobMutation } from '../store/apiSlice';
+import { getErrorMessage } from '../lib/apiError';
 
 const STATUSES: JobStatus[] = ['wishlist', 'applied', 'screening', 'interview', 'offer', 'rejected'];
 
@@ -55,6 +56,7 @@ export default function JobDetailPanel({ job, onClose, onSaved, toast }: JobDeta
   });
   const [saving, setSaving] = useState(false);
   const [recalc, setRecalc] = useState(false);
+  const [patchJob] = usePatchJobMutation();
 
   useEffect(() => {
     if (!job) return;
@@ -101,13 +103,12 @@ export default function JobDetailPanel({ job, onClose, onSaved, toast }: JobDeta
       if (form.follow_up_date) {
         payload.follow_up_date = new Date(form.follow_up_date).toISOString();
       }
-      await patchJob(job.id, payload);
+      await patchJob({ id: job.id, data: payload }).unwrap();
       toast?.('Application updated', 'success');
       onSaved?.();
       onClose();
-    } catch (e: any) {
-      const msg = e.response?.data?.detail || e.message || 'Could not save';
-      toast?.(typeof msg === 'string' ? msg : 'Could not save', 'error');
+    } catch (e) {
+      toast?.(getErrorMessage(e, 'Could not save'), 'error');
     } finally {
       setSaving(false);
     }

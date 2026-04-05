@@ -1,77 +1,167 @@
-# Loomo 🛰️
-### Your AI-powered job hunt co-pilot.
+# Loomo
 
-Loomo is a smart job application tracker I built to turn the messy job search process into a clean, automated dashboard. It doesn't just list your jobs—it uses an **Agnostic AI Engine** (Gemini, Claude, or GPT-4o) to analyze every application you add.
+Loomo is an AI-assisted job tracker built to make job searching feel less chaotic.
 
-## ✨ Why I built this
-Standard spreadsheets are boring and static. Loomo is built for speed and intelligence:
-*  **AI Smart Paste**: Don't waste time typing. Just paste the raw job description, and Loomo extracts the role, company, and location for you.
-*  **Dynamic Brain**: Use **LiteLLM** to hot-swap your AI provider (Gemini, OpenAI, Anthropic) directly from your `.env` without restarting.
-*  **Agentic Career Analyst**: A chat interface that doesn't just talk—it has **Write Access** to your database. You can say *"I just applied to Google as a SWE"* and it will add the job for you.
-*  **Real-time Match Scoring**: See exactly how well your resume fits a job with a percentage score and a list of missing skills you should address before applying.
-*  **Clean Kanban**: Move your applications through stages (Wishlist → Applied → Interview → Offer) with a minimalist drag-and-drop board.
+Instead of managing everything in spreadsheets, notes, and random tabs, Loomo gives you one place to:
+- save jobs
+- track application status
+- compare your resume against job descriptions
+- generate cover letters and follow-up emails
+- review progress through a dashboard, kanban board, and insights view
 
-## 🛠️ The Tech
-*  **Frontend**: React + Tailwind CSS + Framer Motion (for that premium minimalist feel).
-*  **Backend**: FastAPI + SQLAlchemy (PostgreSQL).
-*  **AI Strategy**: LiteLLM for model-agnostic completions and unified tool calling.
+Right now, the project is set up mainly for local development.
 
-## 🚀 Running it locally
+## What Loomo Does
 
-### 1. Backend
+Loomo helps with the main parts of the job search workflow:
+
+- **Resume parsing**: Upload a PDF resume and extract role, company, and skills.
+- **Job parsing**: Paste job text or a job URL and let AI extract structured details.
+- **Application tracking**: Manage jobs across stages like `wishlist`, `applied`, `screening`, `interview`, `offer`, and `rejected`.
+- **Match scoring**: Compare your resume skills with a job description and calculate a match percentage.
+- **Career assistant**: Ask the built-in AI agent to summarize, explain, or update job-related data.
+- **Follow-up support**: Generate cover letters and follow-up emails.
+- **Insights**: Review application counts, platform breakdowns, reminders, and common skill gaps.
+- **Browser extension**: Save jobs from supported job pages into Loomo faster.
+
+## Tech Stack
+
+### Frontend
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- Framer Motion
+- Redux Toolkit + RTK Query
+- React Router
+- Recharts
+
+### Backend
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Alembic
+- LiteLLM
+- Pydantic
+- `pypdf`
+- `httpx`
+- BeautifulSoup
+
+### Testing
+- pytest
+- FastAPI TestClient
+
+## Project Structure
+
+```text
+Loomo/
+├── Frontend/   # React app
+├── Backend/    # FastAPI API + database logic
+├── Extension/  # Chrome extension
+└── README.md
+```
+
+## Running Loomo Locally
+
+### 1. Start the backend
+
 ```bash
 cd Backend
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-# Add your keys to .env
 python -m uvicorn app.main:app --reload
 ```
 
-### 2. Frontend
+The backend runs on:
+
+```text
+http://127.0.0.1:8000
+```
+
+### 2. Start the frontend
+
 ```bash
 cd Frontend
 npm install
 npm run dev
 ```
 
-## 🧠 Environment Configuration
-In your `Backend/.env`, you'll need:
-```env
-DATABASE_URL=your_postgresql_url
-SECRET_KEY=your_random_string
-LLM_MODEL=gemini/gemini-1.5-flash  # Or "openai/gpt-4o"
-GEMINI_API_KEY=your_key
+The frontend usually runs on:
 
-# Neon: use the connection string from the Neon dashboard (it usually includes ?sslmode=require).
-# If your URL has no sslmode, add either ?sslmode=require or set:
-# DATABASE_SSL=require
-
-# Production CORS — comma-separated frontend origins (no trailing slashes)
-# CORS_ORIGINS=https://your-app.vercel.app,http://localhost:5173
-
-# Optional: Gmail Sync (Experimental)
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_16_char_app_password
-GMAIL_LABEL=Loomo
+```text
+http://localhost:5173
 ```
 
-### Neon PostgreSQL (existing database)
-If you already use Neon, apply schema updates **once** after pulling a version that adds columns:
+## Backend Environment Variables
 
-1. Open **Neon Console → SQL Editor**, paste the contents of `Backend/scripts/add_job_reminder_columns.sql`, and run it, **or** from a shell (with `psql` installed):
-   ```bash
-   psql "$DATABASE_URL" -f Backend/scripts/add_job_reminder_columns.sql
-   ```
-2. Deployed frontend: set `VITE_API_URL` to your API base URL (e.g. `https://api.yourdomain.com`) so the app calls the right backend.
+Create a `Backend/.env` file and add the values you need:
 
+```env
+DATABASE_URL=your_postgresql_url
+SECRET_KEY=your_random_secret
+LLM_MODEL=gemini/gemini-1.5-flash
+GEMINI_API_KEY=your_key
 
-## 🤖 Experimental: Gmail Integration (Beta)
-Loomo now features a **privacy-first Gmail sync** that only reads emails you've explicitly tagged. To set it up:
-1.  **Labeling**: Create a new label in Gmail called **"Loomo"**.
-2.  **Organization**: Move or filter any job application emails you want Loomo to track into this "Loomo" label.
-3.  **App Password**: Go to your [Google Account Settings](https://myaccount.google.com/security) > 2-Step Verification > **App Passwords**.
-4.  **Generate**: Create a new password for "Loomo" and paste it into your `Backend/.env` as `GMAIL_APP_PASSWORD`.
-5.  **Sync**: Hit the **Sync from Gmail (Beta)** button in the **Workspace Tools** section at the bottom of your Dashboard!
+# Optional SSL flag if your DATABASE_URL does not already include sslmode=require
+# DATABASE_SSL=require
 
----
-Built with 💜 by **Surya Prabhas Bandaru**
-[LinkedIn](https://www.linkedin.com/in/bsuryaprabhas/) • [Portfolio](https://surya-portfolio-mu.vercel.app/)
+# Optional frontend origins
+# CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+
+# Optional Gmail sync
+# GMAIL_USER=your_email@gmail.com
+# GMAIL_APP_PASSWORD=your_app_password
+# GMAIL_LABEL=Loomo
+```
+
+## Database Migrations
+
+Loomo now includes Alembic migration scaffolding.
+
+Run migrations with:
+
+```bash
+cd Backend
+alembic upgrade head
+```
+
+If you are using an older local or Neon database, you may still need the reminder SQL patch:
+
+```bash
+psql "$DATABASE_URL" -f Backend/scripts/add_job_reminder_columns.sql
+```
+
+## Running Tests
+
+Backend tests:
+
+```bash
+cd Backend
+source venv/bin/activate
+pytest tests
+```
+
+## Gmail Sync
+
+Gmail sync is optional and experimental.
+
+To use it:
+1. Create a Gmail label called `Loomo`
+2. Move or filter job-related emails into that label
+3. Generate a Gmail app password
+4. Add the Gmail values to `Backend/.env`
+5. Use the **Sync Gmail (Beta)** action in the dashboard
+
+## Notes
+
+- Loomo is currently being used as a **local-first** project.
+- The browser extension is still configured around local development URLs.
+- If you later want to deploy it, you should review CORS, secrets, API key storage, and production environment variables first.
+
+## Author
+
+Built by **Surya Prabhas Bandaru**
+
+- [LinkedIn](https://www.linkedin.com/in/bsuryaprabhas/)
+- [Portfolio](https://surya-portfolio-mu.vercel.app/)

@@ -69,4 +69,13 @@
   window.addEventListener("storage", e => {
     if (e.key === "token") sync();
   });
+
+  // Listen for broadcast messages from background.js to invalidate cache
+  if (typeof chrome !== "undefined" && chrome.runtime?.onMessage) {
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg.action === "LOOMO_SYNC_REFRESH") {
+        window.dispatchEvent(new CustomEvent("loomo-job-saved"));
+      }
+    });
+  }
 })();

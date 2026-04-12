@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+
 export function getErrorMessage(error: unknown, fallback = 'Something went wrong.') {
   if (typeof error === 'string') return error;
 
@@ -17,4 +19,13 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
   }
 
   return fallback;
+}
+
+export function notifyError(error: unknown, fallback?: string) {
+  const msg = getErrorMessage(error, fallback);
+  toast.error(msg);
+}
+
+export function notifySuccess(message: string) {
+  toast.success(message);
 }

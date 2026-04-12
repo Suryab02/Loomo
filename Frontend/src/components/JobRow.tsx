@@ -11,7 +11,7 @@ interface JobRowProps {
 }
 
 function getMatchScore(value: Job['match_score']) {
-  if (value === null || value === undefined || value === '') return null;
+  if (value === null || value === undefined) return null;
   const score = Number(value);
   return Number.isFinite(score) ? score : null;
 }
@@ -61,7 +61,7 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, 
           className="p-1.5 text-[#a3a3a3] hover:text-[#6d28d9] hover:bg-[#f5f3ff] rounded-md transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
           title="Draft Cover Letter"
         >
-          {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+          <FileText className={`w-4 h-4 ${isGenerating ? 'opacity-30' : ''}`} />
         </button>
 
         <button

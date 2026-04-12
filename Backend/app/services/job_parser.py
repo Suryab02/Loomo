@@ -8,21 +8,21 @@ def parse_job_text(text: str) -> dict:
     text = security_gateway(text)
 
     messages = [
-        {"role": "system", "content": "You are Loomo's Job Extraction Agent. Your task is to analyze messy job description text and extract structured data. You are extremely accurate even with partial or low-quality text inputs. Return ONLY valid JSON."},
+        {"role": "system", "content": "You are Loomo's Job Extraction Agent. Your task is to analyze messy job description text and extract structured data. Return ONLY valid JSON. Note the clear sections for PAGE TITLE, HEADINGS, and BODY CONTENT."},
         {"role": "user", "content": f"""
             Analyze the following text and extract the specific job details.
             
-            IMPORTANT:
-            - The text starts with 'HEADER INFO', which contains the page title and headings. Use this to identify the 'company' and 'role' first.
-            - If 'company' or 'role' are unclear in the body, rely on the 'HEADER INFO'.
+            CRITICAL RULES:
+            1. DO NOT swap 'company' and 'role'. The 'role' is the job title (e.g., 'Software Engineer'). The 'company' is the organization hiring.
+            2. Look closely at the PAGE TITLE and HEADINGS to figure out which is which! Usually, the page title explicitly says "[Company] is hiring [Role]" or "[Role] | [Company]".
             
             FORMAT REQUIREMENTS:
-            - "company": Full official company name. Look for "About [Company]" or "Join [Company]".
+            - "company": Full official company name.
             - "role": The exact job title (e.g., "Senior React Developer").
             - "location": City and State (or "Remote" / "Hybrid").
             - "salary_range": Extract numbers (e.g., "$120k - $150k") if mentioned.
             - "platform": Where did this text likely come from? (e.g., LinkedIn, Indeed, etc.)
-            - "job_description": Avoid just copying the headers; write a 1-2 sentence high-level summary of the actual job responsibilities.
+            - "job_description": The FULL actual job description text. Extract ALL responsibilities, requirements, and day-to-day details exactly as written. Clean out noisy UI elements (e.g., "Apply now", "Show match details", "People you can reach out to").
 
             If a field is absolutely not found, use an empty string "". No extra commentary. Return ONLY the JSON object.
 

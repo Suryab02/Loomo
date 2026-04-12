@@ -1,12 +1,14 @@
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
 from app.database import engine, Base
 from app.routes import auth
 from app.routes import onboarding
 from app.routes import jobs
 from app.routes import insights
+from app.utils.logging import get_logger
+
+logger = get_logger("main")
 
 # Create all DB tables on startup
 Base.metadata.create_all(bind=engine)
@@ -17,9 +19,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Comma-separated origins, e.g. CORS_ORIGINS=https://app.example.com,http://localhost:5173
-# Use * only for local dev if needed.
-_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").strip()
+# CORS Setup via Settings
+_origins = settings.CORS_ORIGINS
 _cors_list = [o.strip() for o in _origins.split(",") if o.strip()] if _origins != "*" else ["*"]
 
 app.add_middleware(
@@ -37,6 +38,7 @@ app.include_router(insights.router)
 
 @app.get("/")
 def root():
+    logger.info("Root endpoint hit")
     return {"message": "Loomo API is running 🚀"}
 
 @app.get("/health")

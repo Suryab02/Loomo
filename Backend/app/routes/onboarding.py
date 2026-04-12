@@ -7,6 +7,9 @@ from app.services.resume_parser import parse_resume
 from pypdf import PdfReader
 import io
 from pydantic import BaseModel
+from app.utils.logging import get_logger
+
+logger = get_logger("onboarding")
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
@@ -24,7 +27,7 @@ async def upload_resume(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    
+    logger.info(f"Uploading and parsing resume for user {current_user.id}")
     contents = await file.read()
     pdf = PdfReader(io.BytesIO(contents))
     text = ""
@@ -61,4 +64,5 @@ def save_preferences(
     db.commit()
     db.refresh(current_user)
 
+    logger.info(f"Onboarding preferences saved for user {current_user.id}")
     return {"message": "Onboarding complete!"}

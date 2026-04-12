@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Upload, Target, FileText, Check, Copy, X, Loader2, Sparkles, Search, SlidersHorizontal } from 'lucide-react';
+import { Plus, Upload, Target, Loader2, Search, SlidersHorizontal } from 'lucide-react';
 import {
   useGetStatsQuery,
   useGetJobsQuery,
@@ -19,40 +19,24 @@ import Navbar from '../components/Navbar';
 import StatCard from '../components/StatCard';
 import JobRow from '../components/JobRow';
 import AddJobModal from '../components/AddJobModal';
+import AIDraftModal from '../components/AIDraftModal';
 import JobDetailPanel from '../components/JobDetailPanel';
+import RemindersBanner from '../components/dashboard/RemindersBanner';
+import GmailSyncBanner from '../components/dashboard/GmailSyncBanner';
 import { DashboardSkeleton } from '../components/PageSkeleton';
 import { useToast } from '../context/ToastContext';
+import { useDashboardFilters } from '../hooks/useDashboardFilters';
 import type { Job, JobStatus } from '../types';
 import { getErrorMessage } from '../lib/apiError';
-
-interface ListParams {
-  q: string;
-  status: JobStatus | '';
-  platform: string;
-  sort: string;
-  order: 'asc' | 'desc';
-  page: number;
-  per_page: number;
-}
 
 function Dashboard() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Filters & Pagination State
-  const [searchInput, setSearchInput] = useState('');
-  const [listParams, setListParams] = useState<ListParams>({
-    q: '',
-    status: '',
-    platform: '',
-    sort: 'created_at',
-    order: 'desc',
-    page: 1,
-    per_page: 50,
-  });
+  // Filters hook
+  const { searchInput, setSearchInput, listParams, setListParams, resetFilters } = useDashboardFilters();
 
-  // RTK Query hooks
+  // Queries
   const { data: stats, isLoading: statsLoading } = useGetStatsQuery();
   const { data: jobsData, isLoading: jobsLoading } = useGetJobsQuery(listParams);
   const { data: reminders = [] } = useGetRemindersQuery();
@@ -79,16 +63,7 @@ function Dashboard() {
   });
   const [generatedLetter, setGeneratedLetter] = useState<string | null>(null);
   const [letterTitle, setLetterTitle] = useState('Draft');
-  const [copied, setCopied] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-
-  useEffect(() => {
-    if (searchDebounce.current) clearTimeout(searchDebounce.current);
-    searchDebounce.current = setTimeout(() => {
-      setListParams((p) => ({ ...p, q: searchInput.trim(), page: 1 }));
-    }, 320);
-    return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); }
-  }, [searchInput]);
 
   const handleParseJob = async () => {
     if (!pasteText) return;
@@ -200,14 +175,6 @@ function Dashboard() {
     }
   };
 
-  const copyToClipboard = () => {
-    if (generatedLetter) {
-        navigator.clipboard.writeText(generatedLetter);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   if (statsLoading || jobsLoading) return <DashboardSkeleton />;
 
   const statCards = [
@@ -240,7 +207,7 @@ function Dashboard() {
               disabled={uploadingResume}
               className="group flex items-center gap-2 px-5 py-2.5 bg-[#f7f7f7] hover:bg-[#ededed] text-[#111111] text-sm font-semibold rounded-full border border-[#ededed] transition-all disabled:opacity-50"
             >
-              {uploadingResume ? <Loader2 className="w-4 h-4 animate-spin text-[#737373]" /> : <Upload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />}
+              {uploadingResume ? <Upload className="w-4 h-4 text-[#737373]" /> : <Upload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />}
               {uploadingResume ? 'Processing...' : 'Re-sync Resume'}
             </button>
             <button
@@ -260,100 +227,20 @@ function Dashboard() {
           ))}
         </div>
 
-        <AnimatePresence>
-          {foundJobs.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mb-8 p-6 bg-[#f8fafc] border border-[#e2e8f0] rounded-[24px] shadow-sm"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-[17px] font-semibold text-[#1e293b] flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-[#64748b]" />
-                  Found in your Gmail
-                </h3>
-                <button type="button" onClick={() => setFoundJobs([])} className="text-[12px] text-[#64748b] hover:text-[#1e293b]">Dismiss all</button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {foundJobs.map((job, idx) => (
-                  <div key={idx} className="p-4 bg-white border border-[#e2e8f0] rounded-[16px] flex justify-between items-center group hover:border-[#94a3b8] transition-all">
-                    <div>
-                      <h4 className="text-sm font-bold text-[#1e293b]">{job.role || 'Unknown Role'}</h4>
-                      <p className="text-[12px] text-[#64748b]">{job.company || 'Unknown Company'}</p>
-                    </div>
-                    <button type="button" onClick={() => handleAcceptGmailJob(idx)} className="px-4 py-1.5 bg-[#111111] text-white text-[12px] font-semibold rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      Track Job
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <GmailSyncBanner 
+          foundJobs={foundJobs} 
+          onAccept={handleAcceptGmailJob} 
+          onDismissAll={() => setFoundJobs([])} 
+        />
 
-        <AnimatePresence>
-          {reminders.length > 0 && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="mb-8 overflow-hidden"
-            >
-              <div className="bg-[#fff9eb] border border-[#ffeeba] p-5 rounded-[20px] flex flex-col gap-4">
-                <div className="flex gap-3">
-                  <div className="w-10 h-10 bg-[#fef3c7] rounded-full flex items-center justify-center shrink-0">
-                    <Sparkles className="w-5 h-5 text-[#d97706]" />
-                  </div>
-                  <div>
-                    <h4 className="text-[15px] font-semibold text-[#92400e]">Follow-up reminders</h4>
-                    <p className="text-[13px] text-[#b45309]">{reminders.length} application(s) in &quot;Applied&quot; for over a week — time to nudge or log contact.</p>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-3">
-                  {reminders.map((job) => (
-                    <div
-                      key={job.id}
-                      className="flex flex-wrap items-center gap-2 p-3 bg-white/80 rounded-[14px] border border-[#ffeeba]"
-                    >
-                      <span className="text-[13px] font-medium text-[#92400e]">{job.company} — {job.role}</span>
-                      <div className="flex flex-wrap gap-2 ml-auto">
-                        <button
-                          type="button"
-                          onClick={() => handleGenerateFollowUp(job.id)}
-                          className="px-3 py-1.5 bg-[#111111] text-white text-[12px] font-semibold rounded-lg"
-                        >
-                          Draft follow-up
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSnooze(job.id)}
-                          className="px-3 py-1.5 border border-[#fcd34d] text-[#92400e] text-[12px] font-medium rounded-lg hover:bg-[#fffbeb]"
-                        >
-                          Snooze 7d
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleContacted(job.id)}
-                          className="px-3 py-1.5 border border-[#86efac] text-[#166534] text-[12px] font-medium rounded-lg hover:bg-[#f0fdf4]"
-                        >
-                          Mark contacted
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <RemindersBanner 
+          reminders={reminders}
+          onGenerateFollowUp={handleGenerateFollowUp}
+          onSnooze={handleSnooze}
+          onContacted={handleContacted}
+        />
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="border border-[#ededed] rounded-[16px] bg-white overflow-hidden shadow-sm"
-        >
+        <div className="border border-[#ededed] rounded-[16px] bg-white overflow-hidden shadow-sm">
           <div className="px-6 py-4 border-b border-[#ededed] flex flex-col gap-4">
             <div className="flex justify-between items-center text-sm font-medium text-[#111111]">
               <span>Applications</span>
@@ -416,15 +303,15 @@ function Dashboard() {
               <p className="text-[#737373] text-sm mt-1 text-balance max-w-sm">Try clearing search or add a new role with Add Application — paste a job description to extract fields with AI.</p>
               <button
                 type="button"
-                onClick={() => { setSearchInput(''); setListParams((p) => ({ ...p, q: '', status: '', platform: '', page: 1 })) }}
+                onClick={resetFilters}
                 className="mt-6 text-sm font-semibold text-[#111111] underline underline-offset-4"
               >
                 Reset filters
               </button>
             </div>
           ) : (
-            <div className="divide-y divide-[#ededed]">
-              <AnimatePresence>
+            <motion.div layout className="divide-y divide-[#ededed]">
+              <AnimatePresence initial={false} mode="popLayout">
                 {jobs.map((job) => (
                   <JobRow
                     key={job.id}
@@ -436,7 +323,7 @@ function Dashboard() {
                   />
                 ))}
               </AnimatePresence>
-            </div>
+            </motion.div>
           )}
 
           {totalPages > 1 && (
@@ -460,7 +347,7 @@ function Dashboard() {
               </button>
             </div>
           )}
-        </motion.div>
+        </div>
 
         <div className="mt-20 pt-8 border-t border-[#f7f7f7] flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
@@ -474,89 +361,41 @@ function Dashboard() {
             disabled={syncingGmail}
             className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-[#f7f7f7] text-[#111111] text-[12px] font-bold rounded-full border border-[#ededed] shadow-sm transition-all disabled:opacity-50 active:scale-95"
           >
-            {syncingGmail ? <Loader2 className="w-4 h-4 animate-spin text-[#737373]" /> : <FileText className="w-4 h-4" />}
+            {syncingGmail ? <Loader2 className="w-4 h-4 opacity-0" /> : <Loader2 className="w-4 h-4" />}
             {syncingGmail ? 'Syncing...' : 'Sync Gmail (Beta)'}
           </button>
         </div>
       </main>
 
-      <AnimatePresence>
-        {showAddJob && (
-          <AddJobModal
-            onClose={() => setShowAddJob(false)}
-            pasteText={pasteText}
-            setPasteText={setPasteText}
-            handleParseJob={handleParseJob}
-            parsing={parsing}
-            newJob={newJob}
-            setNewJob={setNewJob}
-            handleAddJob={handleAddJob}
-            adding={adding}
-            toast={toast}
-          />
-        )}
-      </AnimatePresence>
+      {showAddJob && (
+        <AddJobModal
+          onClose={() => setShowAddJob(false)}
+          pasteText={pasteText}
+          setPasteText={setPasteText}
+          handleParseJob={handleParseJob}
+          parsing={parsing}
+          newJob={newJob}
+          setNewJob={setNewJob}
+          handleAddJob={handleAddJob}
+          adding={adding}
+          toast={toast}
+        />
+      )}
 
-      <AnimatePresence>
-        {selectedJob && (
-          <JobDetailPanel
-            job={selectedJob}
-            onClose={() => setSelectedJob(null)}
-            onSaved={() => setSelectedJob(null)}
-            toast={toast}
-          />
-        )}
-      </AnimatePresence>
+      {selectedJob && (
+        <JobDetailPanel
+          job={selectedJob}
+          onClose={() => setSelectedJob(null)}
+          onSaved={() => setSelectedJob(null)}
+          toast={toast}
+        />
+      )}
 
-      <AnimatePresence>
-        {generatedLetter && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-[24px] shadow-2xl w-full max-w-[600px] flex flex-col max-h-[85vh]"
-            >
-              <div className="p-6 border-b border-[#ededed] flex justify-between items-center bg-[#fdfdfd] rounded-t-[24px]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#f5f3ff] rounded-xl flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-[#6d28d9]" />
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-semibold text-[#111111]">{letterTitle}</h3>
-                    <p className="text-[12px] text-[#737373]">Generated with Loomo AI</p>
-                  </div>
-                </div>
-                <button type="button" onClick={() => setGeneratedLetter(null)} className="p-2 text-[#a3a3a3] hover:bg-[#f7f7f7] rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-8 overflow-y-auto whitespace-pre-wrap text-[15px] leading-relaxed text-[#404040]">
-                {generatedLetter}
-              </div>
-
-              <div className="p-6 border-t border-[#ededed] flex gap-3">
-                <button
-                  type="button"
-                  onClick={copyToClipboard}
-                  className="flex-1 py-3 bg-[#6d28d9] hover:bg-[#5b21b6] text-white rounded-[14px] font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#6d28d9]/20"
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  {copied ? 'Copied!' : 'Copy to Clipboard'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGeneratedLetter(null)}
-                  className="flex-1 py-3 border border-[#ededed] hover:bg-[#f7f7f7] text-[#111111] rounded-[14px] font-semibold text-sm transition-all"
-                >
-                  Close
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <AIDraftModal 
+        content={generatedLetter} 
+        title={letterTitle} 
+        onClose={() => setGeneratedLetter(null)} 
+      />
     </div>
   );
 }

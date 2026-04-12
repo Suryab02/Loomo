@@ -1,29 +1,21 @@
-import os
 import json
 from litellm import completion
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Default to Gemini if not specified
-# Formats: "gemini/gemini-2.5-flash", "openai/gpt-4o", "anthropic/claude-3-5-sonnet"
-LLM_MODEL = os.getenv("LLM_MODEL", "gemini/gemini-2.5-flash")
+from app.config import settings
 
 def chat_completion(messages, tools=None, tool_choice=None, response_format=None):
     """
     A unified interface for chat completions across different LLM providers.
     Uses LiteLLM under the hood to normalize requests/responses.
     """
-    # Force reload env to catch changes to LLM_MODEL without restart
-    load_dotenv()
-    model = os.getenv("LLM_MODEL", "gemini/gemini-1.5-flash")
+    model = settings.LLM_MODEL
 
     try:
-        max_tokens = int(os.getenv("LLM_MAX_TOKENS", "2048"))
+        max_tokens = settings.LLM_MAX_TOKENS
         kwargs = {
             "model": model,
             "messages": messages,
             "max_tokens": max_tokens,
+            "api_key": settings.GEMINI_API_KEY
         }
         
         if tools:

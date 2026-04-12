@@ -20,6 +20,9 @@ from app.utils.job_dedupe import find_duplicate_job
 from app.services.match_score import calculate_match
 from app.services.job_parser import parse_job_text
 from app.services.gmail_sync import get_gmail_jobs
+from app.utils.logging import get_logger
+
+logger = get_logger("jobs")
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -137,6 +140,7 @@ def add_job(
     current_user: User = Depends(get_current_user),
 ):
     cleaned_data = scrub_database_input(request.model_dump())
+    logger.info(f"Adding new job for user {current_user.id}: {cleaned_data.get('company')} - {cleaned_data.get('role')}")
 
     dup = find_duplicate_job(
         db,
@@ -397,6 +401,7 @@ def delete_job(
     if job.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    logger.info(f"Deleted job {job_id} for user {current_user.id}")
     db.delete(job)
     db.commit()
     return {"message": "Job deleted successfully"}

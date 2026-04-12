@@ -85,7 +85,7 @@ export default function AddJobModal({
             disabled={fetchingUrl || !jobUrl.trim()}
             className="shrink-0 px-4 py-2.5 rounded-[12px] bg-[#f7f7f7] border border-[#ededed] text-sm font-semibold disabled:opacity-40"
           >
-            {fetchingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Fetch'}
+            {fetchingUrl ? 'Fetching...' : 'Fetch'}
           </button>
         </div>
 
@@ -103,7 +103,7 @@ export default function AddJobModal({
             disabled={parsing || !pasteText}
             className="w-full py-3 rounded-[14px] bg-[#111111] disabled:bg-[#f5f5f5] disabled:text-[#a3a3a3] text-white font-semibold text-[13px] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
           >
-            {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {parsing ? <Sparkles className="w-4 h-4 opacity-30" /> : <Sparkles className="w-4 h-4" />}
             {parsing ? 'Extracting...' : 'Extract from paste'}
           </button>
         </div>
@@ -141,12 +141,7 @@ export default function AddJobModal({
           disabled={adding || !newJob.company || !newJob.role}
           className="w-full py-3.5 rounded-[16px] bg-[#111111] disabled:bg-[#f5f5f5] disabled:text-[#d4d4d4] text-white font-bold text-sm transition-all shadow-md active:scale-[0.98]"
         >
-          {adding ? (
-            <div className="flex items-center justify-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Saving...</span>
-            </div>
-          ) : 'Save Application'}
+          {adding ? 'Saving...' : 'Save Application'}
         </button>
 
       </motion.div>

@@ -125,6 +125,13 @@ async function saveJob({ text, url, title }) {
     message: `${saved.role} at ${saved.company} — added to your Wishlist.`,
   });
 
+  // 5. Broadcast to any open React tabs to refresh the Kanban board
+  chrome.tabs.query({ url: ["http://localhost:5173/*", "http://127.0.0.1:5173/*"] }, (tabs) => {
+    for (const tab of tabs) {
+      chrome.tabs.sendMessage(tab.id, { action: "LOOMO_SYNC_REFRESH" }).catch(() => {});
+    }
+  });
+
   return { ok: true, job: saved };
 }
 
@@ -141,16 +148,20 @@ async function callGeminiApi(text, apiKey) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const prompt = `
-    You are Loomo's Job Extraction Agent. Analyze messy job description text and extract structured data.
-    Return ONLY valid JSON.
-    
+    You are Loomo's Job Extraction Agent. You MUST extract structured JSON data from messy web text.
+    Return ONLY valid JSON. Note the clear sections for PAGE TITLE, HEADINGS, and BODY CONTENT.
+
+    CRITICAL RULES:
+    1. DO NOT swap 'company' and 'role'. The 'role' is the job title (e.g., 'Software Engineer'). The 'company' is the organization hiring (e.g., 'Automation Anywhere'). Look closely at the PAGE TITLE and HEADINGS to figure out which is which!
+    2. Usually, the page title explicitly says "[Company] is hiring [Role]" or "[Role] | [Company]".
+
     FORMAT REQUIREMENTS:
-    - "company": Full official company name.
-    - "role": Exact job title.
+    - "company": Full official company name. 
+    - "role": Exact job title. 
     - "location": City and State (or "Remote" / "Hybrid").
     - "salary_range": Extract numbers/ranges if mentioned.
     - "platform": (e.g. LinkedIn, Indeed, etc.)
-    - "job_description": 1-2 sentence high-level summary.
+    - "job_description": The FULL actual job description text from the BODY CONTENT. Remove junk UI text like 'Apply', 'Show match details', but KEEP ALL responsibilities, requirements, and about us sections exactly as written.
 
     TEXT INPUT:
     ${text}

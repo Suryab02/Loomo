@@ -201,6 +201,19 @@ export const apiSlice = createApi({
         method: 'POST',
       }),
     }),
+    tailorResume: builder.mutation<{ tailored_resume: string }, number>({
+      query: (id) => ({
+        url: `/insights/tailor-resume/${id}`,
+        method: 'POST',
+      }),
+    }),
+    mockInterview: builder.mutation<{ reply: string }, { id: number; message_history: { role: string; content: string }[] }>({
+      query: ({ id, message_history }) => ({
+        url: `/insights/mock-interview/${id}`,
+        method: 'POST',
+        body: { message_history },
+      }),
+    }),
   }),
 });
 
@@ -229,4 +242,6 @@ export const {
   useAskAgentMutation,
   useGenerateCoverLetterMutation,
   useGenerateFollowUpMutation,
+  useTailorResumeMutation,
+  useMockInterviewMutation,
 } = apiSlice;

@@ -9,157 +9,85 @@ Instead of managing everything in spreadsheets, notes, and random tabs, Loomo gi
 - generate cover letters and follow-up emails
 - review progress through a dashboard, kanban board, and insights view
 
-Right now, the project is set up mainly for local development.
+## ✨ Key Features
 
-## What Loomo Does
-
-Loomo helps with the main parts of the job search workflow:
-
-- **Resume parsing**: Upload a PDF resume and extract role, company, and skills.
-- **Job parsing**: Paste job text or a job URL and let AI extract structured details.
+- **Resume parsing**: Upload a PDF resume and extract role, company, and skills using AI.
+- **Job parsing**: Paste job text or a job URL and let AI extract structured details automatically.
 - **Application tracking**: Manage jobs across stages like `wishlist`, `applied`, `screening`, `interview`, `offer`, and `rejected`.
 - **Match scoring**: Compare your resume skills with a job description and calculate a match percentage.
 - **Career assistant**: Ask the built-in AI agent to summarize, explain, or update job-related data.
-- **Follow-up support**: Generate cover letters and follow-up emails.
+- **Follow-up support**: Generate cover letters and follow-up emails with AI.
 - **Insights**: Review application counts, platform breakdowns, reminders, and common skill gaps.
-- **Browser extension**: Save jobs from supported job pages into Loomo faster.
+- **Browser extension**: Save jobs from supported job pages directly into Loomo.
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- Framer Motion
-- Redux Toolkit + RTK Query
-- React Router
-- Recharts
+- **React 19 + TypeScript + Vite**
+- **Tailwind CSS + Framer Motion** (Premium UI/UX)
+- **Redux Toolkit + RTK Query** (Advanced State Management)
+- **Recharts** (Interactive Analytics)
 
 ### Backend
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- Alembic
-- LiteLLM
-- Pydantic
-- `pypdf`
-- `httpx`
-- BeautifulSoup
+- **FastAPI** (High-performance Python API)
+- **SQLAlchemy + PostgreSQL** (Reliable Persistence)
+- **LiteLLM + Gemini AI** (Advanced AI orchestration)
+- **Structured Logging** (Professional observability)
 
-### Testing
-- pytest
-- FastAPI TestClient
+## 🚀 Getting Started
 
-## Project Structure
+### Quick Setup (Recommended)
+Use the unified setup script to configure both frontend and backend automatically:
+
+```bash
+./setup_dev.sh
+```
+
+This will create virtual environments, install dependencies for both apps, and prepare default `.env` files.
+
+### 1. Start the Backend
+```bash
+cd Backend
+source venv/bin/activate
+uvicorn app.main:app --reload
+```
+API runs on: `http://127.0.0.1:8000`
+
+### 2. Start the Frontend
+```bash
+cd Frontend
+npm run dev
+```
+App runs on: `http://localhost:5173`
+
+## 🏗️ Project Architecture
 
 ```text
 Loomo/
-├── Frontend/   # React app
-├── Backend/    # FastAPI API + database logic
+├── Frontend/   # React SPA
+│   ├── src/hooks/       # Custom hooks (Filters, Logic)
+│   ├── src/components/  # UI Library (Dashboard banners, Modals)
+│   └── src/store/       # RTK Query API slices
+├── Backend/    # FastAPI Services
+│   ├── app/routes/      # API Controllers (Auth, Jobs, Insights)
+│   ├── app/models/      # Database Schemas
+│   └── app/utils/       # Helper utilities (Logging, Security)
 ├── Extension/  # Chrome extension
-└── README.md
+└── scripts/    # Automation & Utility scripts
 ```
 
-## Running Loomo Locally
+## 📝 Environment Variables
 
-### 1. Start the backend
-
-```bash
-cd Backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
-```
-
-The backend runs on:
-
-```text
-http://127.0.0.1:8000
-```
-
-### 2. Start the frontend
-
-```bash
-cd Frontend
-npm install
-npm run dev
-```
-
-The frontend usually runs on:
-
-```text
-http://localhost:5173
-```
-
-## Backend Environment Variables
-
-Create a `Backend/.env` file and add the values you need:
+Create a `Backend/.env` file:
 
 ```env
 DATABASE_URL=your_postgresql_url
 SECRET_KEY=your_random_secret
 LLM_MODEL=gemini/gemini-1.5-flash
 GEMINI_API_KEY=your_key
-
-# Optional SSL flag if your DATABASE_URL does not already include sslmode=require
-# DATABASE_SSL=require
-
-# Optional frontend origins
-# CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-
-# Optional Gmail sync
-# GMAIL_USER=your_email@gmail.com
-# GMAIL_APP_PASSWORD=your_app_password
-# GMAIL_LABEL=Loomo
 ```
 
-## Database Migrations
-
-Loomo now includes Alembic migration scaffolding.
-
-Run migrations with:
-
-```bash
-cd Backend
-alembic upgrade head
-```
-
-If you are using an older local or Neon database, you may still need the reminder SQL patch:
-
-```bash
-psql "$DATABASE_URL" -f Backend/scripts/add_job_reminder_columns.sql
-```
-
-## Running Tests
-
-Backend tests:
-
-```bash
-cd Backend
-source venv/bin/activate
-pytest tests
-```
-
-## Gmail Sync
-
-Gmail sync is optional and experimental.
-
-To use it:
-1. Create a Gmail label called `Loomo`
-2. Move or filter job-related emails into that label
-3. Generate a Gmail app password
-4. Add the Gmail values to `Backend/.env`
-5. Use the **Sync Gmail (Beta)** action in the dashboard
-
-## Notes
-
-- Loomo is currently being used as a **local-first** project.
-- The browser extension is still configured around local development URLs.
-- If you later want to deploy it, you should review CORS, secrets, API key storage, and production environment variables first.
-
-## Author
+## 📜 Author
 
 Built by **Surya Prabhas Bandaru**
 

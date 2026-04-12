@@ -13,6 +13,9 @@ from app.utils.auth import get_current_user
 from app.utils.security import security_gateway
 from app.utils.rate_limit import require_llm_budget
 from app.services.llm_gateway import chat_completion
+from app.utils.logging import get_logger
+
+logger = get_logger("insights")
 import json
 
 router = APIRouter(prefix="/insights", tags=["insights"])
@@ -120,6 +123,7 @@ def chat_with_agent(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_llm_budget),
 ):
+    logger.info(f"User {current_user.id} is chatting with the Career Agent: {request.query[:50]}...")
     tools = [
         {
             "type": "function",
@@ -317,6 +321,7 @@ def generate_cover_letter(
     ]
 
     try:
+        logger.info(f"Cover letter manual generation requested for job {job_id} by user {current_user.id}")
         response = chat_completion(messages)
         return {"cover_letter": response.choices[0].message.content}
     except Exception:
@@ -365,3 +370,58 @@ def generate_followup_email(
         return {"follow_up_email": response.choices[0].message.content}
     except Exception:
         raise HTTPException(status_code=502, detail="Failed to generate follow-up email")
+
+class MockInterviewRequest(BaseModel):
+    message_history: list[dict]
+
+@router.post("/tailor-resume/{job_id}")
+def generate_tailored_resume(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_llm_budget),
+):
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if not (job.job_description or "").strip():
+        raise HTTPException(status_code=400, detail="Add a job description to tailor the resume.")
+
+    skills = current_user.skills or "Experienced Professional"
+
+    messages = [
+        {
+            "role": "system",
+            "content": "You are an expert resume writer and ATS optimizer. Rewrite the provided base skills/resume data to perfectly align with the target job description. Output ONLY a clean Markdown resume."
+        },
+        {
+            "role": "user",
+            "content": f"ROLE: {job.role}\nCOMPANY: {job.company}\n\nTARGET JOB DESCRIPTION:\n{job.job_description}\n\nCANDIDATE BASE SKILLS:\n{skills}\n\nGenerate the tailored resume in Markdown format."
+        }
+    ]
+
+    try:
+        response = chat_completion(messages)
+        return {"tailored_resume": response.choices[0].message.content}
+    except Exception:
+        raise HTTPException(status_code=502, detail="Failed to tailor resume")
+
+@router.post("/mock-interview/{job_id}")
+def run_mock_interview(
+    job_id: int,
+    request: MockInterviewRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_llm_budget),
+):
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    sys_prompt = f"You are a strict, professional hiring manager at {job.company} interviewing a candidate for the {job.role} position. Follow the conversation history. Ask ONE interview question at a time based on this job description: {job.job_description}. Wait for the candidate's answer, evaluate it briefly, and then ask the next question."
+
+    messages = [{"role": "system", "content": sys_prompt}] + request.message_history
+
+    try:
+        response = chat_completion(messages)
+        return {"reply": response.choices[0].message.content}
+    except Exception:
+        raise HTTPException(status_code=502, detail="Mock interview failed to respond")

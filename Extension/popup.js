@@ -14,24 +14,6 @@ const API = "http://127.0.0.1:8000";
 
 // ── URL Helpers ───────────────────────────────────────────────────────────────
 
-const JOB_PATTERNS = [
-  "linkedin.com/jobs",
-  "indeed.com/viewjob",
-  "indeed.com/jobs",
-  "glassdoor.com/job",
-  "greenhouse.io/jobs",
-  "lever.co",
-  "wellfound.com/jobs",
-  "ziprecruiter.com/jobs",
-  "workday.com",
-  "naukri.com/job",
-  "monster.com/job",
-];
-
-function isJobPage(url) {
-  return JOB_PATTERNS.some(p => url.includes(p)) || (url.includes('linkedin.com/jobs') && getLinkedInJobId(url));
-}
-
 function getLinkedInJobId(url) {
   if (!url.includes("linkedin.com")) return null;
   try {
@@ -89,15 +71,11 @@ async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const tabUrl = tab?.url || "";
 
-  if (isJobPage(tabUrl)) {
-    $("saveSection").style.display = "block";
-    $("hintSection").style.display = "none";
-    const jobId = getLinkedInJobId(tabUrl);
-    if (jobId) $("saveMeta").textContent = `LinkedIn Job #${jobId} detected. Ready to save.`;
-  } else {
-    $("saveSection").style.display = "none";
-    $("hintSection").style.display = "block";
-  }
+  $("saveSection").style.display = "block";
+  $("hintSection").style.display = "none";
+  const jobId = getLinkedInJobId(tabUrl);
+  if (jobId) $("saveMeta").textContent = `LinkedIn Job #${jobId} detected. Ready to save.`;
+  else $("saveMeta").textContent = `Ready to extract job details from this page.`;
 
   // Fetch stats from backend
   const stats = await apiFetch("/insights/stats", token);
@@ -114,7 +92,7 @@ async function init() {
 async function handleSaveJob() {
   const btn = $("saveJobBtn");
   btn.disabled = true;
-  setBtnState(btn, "loading", "⏳  Parsing…");
+  setBtnState(btn, "loading", "⏳  Scanning page...");
 
   try {
     const { token } = await chrome.storage.local.get("token");
@@ -123,22 +101,54 @@ async function handleSaveJob() {
     const [result] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: () => {
-        const headings = Array.from(document.querySelectorAll("h1, h2, h3"))
-          .slice(0, 6).map(h => h.innerText.trim()).filter(Boolean).join(" | ");
-        const header = `HEADER INFO: ${document.title} | ${headings}`;
-        const SELECTORS = [".jobs-description-content__text", "#jobDescriptionText", ".job-body", "main"];
+        // Priority containers (highest priority first) to handle split-views like LinkedIn
+        const SELECTORS = [
+          ".job-view-layout", // LinkedIn split-view right panel
+          ".jobs-description__container", // LinkedIn standalone wrapper
+          ".jobs-search__job-details--container", // Alternate LinkedIn wrapper
+          ".jobs-description-content__text", // Standard LinkedIn description
+          "#jobDescriptionText", // Indeed
+          ".job-body", 
+          "main", 
+          "[role='main']", 
+          "#content"
+        ];
+
+        let targetNode = document.body;
         for (const sel of SELECTORS) {
           const el = document.querySelector(sel);
           if (el && el.innerText.trim().length > 200) {
-            return { text: `${header}\n\n${el.innerText.trim().slice(0, 8000)}`, url: location.href, title: document.title };
+            targetNode = el;
+            break;
           }
         }
-        return { text: `${header}\n\n${document.body.innerText.trim().slice(0, 8000)}`, url: location.href, title: document.title };
+
+        // Only get headings from the targeted node to avoid sidebar noise
+        const headings = Array.from(targetNode.querySelectorAll("h1, h2, h3, h4"))
+          .slice(0, 8).map(h => h.innerText.trim()).filter(Boolean).join(" | ");
+        
+        const bodyContent = targetNode.innerText.trim().slice(0, 25000);
+        
+        const structuredText = `
+--- PAGE TITLE ---
+${document.title}
+
+--- HEADINGS FOUND ---
+${headings}
+
+--- BODY CONTENT ---
+${bodyContent}
+`;
+        return { text: structuredText, url: location.href, title: document.title };
       },
     });
 
+    setBtnState(btn, "loading", "🧠  AI Analyzing...");
+
     const jobData = result.result;
     jobData.url = canonicalUrl(tab.url || jobData.url);
+
+    setBtnState(btn, "loading", "💾  Saving to Loomo...");
 
     const response = await new Promise(resolve => {
       chrome.runtime.sendMessage({ action: "SAVE_JOB", data: jobData }, resolve);

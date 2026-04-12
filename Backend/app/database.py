@@ -1,16 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
-import os
+from app.config import settings
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = settings.DATABASE_URL
 
 # Neon and most hosted Postgres URLs include ?sslmode=require in DATABASE_URL.
-# If yours does not, set DATABASE_SSL=require (or true) so psycopg2 negotiates TLS.
+# If yours does not, set DATABASE_SSL=True so psycopg2 negotiates TLS.
 _connect_args = {}
-if os.getenv("DATABASE_SSL", "").lower() in ("1", "true", "yes", "require"):
+if settings.DATABASE_SSL:
     _connect_args["sslmode"] = "require"
 
 engine = create_engine(DATABASE_URL, connect_args=_connect_args or {})

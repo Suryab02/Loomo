@@ -117,7 +117,7 @@ function Kanban() {
             {COLUMNS.map((col) => (
               <div
                 key={col.id}
-                className="w-[min(100vw-2rem,300px)] shrink-0 snap-center flex flex-col bg-[#fafafa] rounded-[24px] border border-[#ededed] p-2 min-h-[70vh]"
+                className="w-[min(100vw-2rem,300px)] shrink-0 snap-center flex flex-col bg-[#fafafa] rounded-[24px] border border-[#ededed] p-2 max-h-[calc(100vh-180px)]"
               >
                 <div className="px-4 py-3 flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -134,7 +134,7 @@ function Kanban() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`flex-1 rounded-[18px] p-2 transition-all duration-200 min-h-[120px] ${snapshot.isDraggingOver ? 'bg-[#f0f0f0]' : 'bg-transparent'}`}
+                      className={`flex-1 rounded-[18px] p-2 transition-all duration-200 min-h-[120px] overflow-y-auto custom-scrollbar ${snapshot.isDraggingOver ? 'bg-[#f0f0f0]' : 'bg-transparent'}`}
                     >
                       {getJobsByStatus(col.id).map((job, index) => (
                         <Draggable key={job.id} draggableId={String(job.id)} index={index}>

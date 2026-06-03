@@ -3,7 +3,7 @@ import type { AuthResponse, Job, JobListParams, KeywordGap, ParseJobResult, Stat
 import { clearSession, getToken } from '../lib/auth';
 
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000',
+  baseUrl: import.meta.env.VITE_API_URL || 'https://loomo-backend.vercel.app',
   prepareHeaders: (headers) => {
     const token = getToken();
     if (token) {

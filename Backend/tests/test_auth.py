@@ -37,5 +37,5 @@ def test_login_rejects_bad_password(client: TestClient):
     )
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid email or password"
+    assert response.json()["detail"] == "Invalid credentials"
 

@@ -1,21 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import type { JobStatus } from '../types';
 
-interface ListParams {
-  q: string;
-  status: JobStatus | '';
-  platform: string;
-  sort: string;
-  order: 'asc' | 'desc';
-  page: number;
-  per_page: number;
-}
+import { JobListParams } from '../types';
 
 export function useDashboardFilters() {
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [searchInput, setSearchInput] = useState('');
-  const [listParams, setListParams] = useState<ListParams>({
+  const [listParams, setListParams] = useState<JobListParams>({
     q: '',
     status: '',
     platform: '',

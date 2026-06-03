@@ -210,14 +210,43 @@ export default function JobDetailPanel({ job, onClose, onSaved, toast }: JobDeta
 
             <div>
               <label className="text-[11px] font-semibold text-[#737373] uppercase tracking-wide">Job description</label>
-              <textarea value={form.job_description} onChange={(e) => setForm((f) => ({ ...f, job_description: e.target.value }))} rows={5} className="mt-1 w-full px-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm resize-none" />
+              <textarea value={form.job_description} onChange={(e) => setForm((f) => ({ ...f, job_description: e.target.value }))} rows={5} className="mt-1 w-full px-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm resize-none custom-scrollbar" />
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-[#111111] cursor-pointer">
-              <input type="checkbox" checked={recalc} onChange={(e) => setRecalc(e.target.checked)} className="rounded border-[#d4d4d4]" />
-              <RefreshCw className="w-4 h-4 text-[#737373]" />
-              Recalculate match vs. resume
-            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-[#737373] uppercase tracking-wide">Contact Name</label>
+                <input value={form.contact_name} onChange={(e) => setForm((f) => ({ ...f, contact_name: e.target.value }))} className="mt-1 w-full px-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm" placeholder="Hiring Manager" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-[#737373] uppercase tracking-wide">Contact Email</label>
+                <input type="email" value={form.contact_email} onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))} className="mt-1 w-full px-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm" placeholder="name@company.com" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-[#737373] uppercase tracking-wide">Applied Date</label>
+                <input type="datetime-local" value={form.applied_date} onChange={(e) => setForm((f) => ({ ...f, applied_date: e.target.value }))} className="mt-1 w-full px-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm text-[#737373]" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-[#737373] uppercase tracking-wide">Follow-up Date</label>
+                <input type="datetime-local" value={form.follow_up_date} onChange={(e) => setForm((f) => ({ ...f, follow_up_date: e.target.value }))} className="mt-1 w-full px-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm text-[#737373]" />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-[#737373] uppercase tracking-wide">Notes</label>
+              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={3} placeholder="Add interview feedback, thoughts, or next steps here..." className="mt-1 w-full px-3 py-2.5 rounded-[12px] border border-[#ededed] text-sm resize-none custom-scrollbar" />
+            </div>
+
+            <div className="pt-2">
+              <label className="flex items-center gap-2 text-sm text-[#111111] cursor-pointer">
+                <input type="checkbox" checked={recalc} onChange={(e) => setRecalc(e.target.checked)} className="rounded border-[#d4d4d4]" />
+                <RefreshCw className="w-4 h-4 text-[#737373]" />
+                Recalculate match vs. resume
+              </label>
+            </div>
           </div>
 
           {/* Resume Tab */}

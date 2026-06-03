@@ -134,7 +134,7 @@ function Kanban() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`flex-1 rounded-[18px] p-2 transition-all duration-200 min-h-[120px] overflow-y-auto custom-scrollbar ${snapshot.isDraggingOver ? 'bg-[#f0f0f0]' : 'bg-transparent'}`}
+                      className={`flex-1 rounded-[18px] p-2 transition-all duration-200 min-h-[120px] overflow-y-auto custom-scrollbar border-2 ${snapshot.isDraggingOver ? 'bg-[#f4f4f5] border-dashed border-[#a1a1aa]' : 'bg-transparent border-transparent'}`}
                     >
                       {getJobsByStatus(col.id).map((job, index) => (
                         <Draggable key={job.id} draggableId={String(job.id)} index={index}>

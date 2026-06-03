@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { AuthResponse, Job, KeywordGap, ParseJobResult, Stats, User } from '../types';
+import type { AuthResponse, Job, JobListParams, KeywordGap, ParseJobResult, Stats, User } from '../types';
 import { clearSession, getToken } from '../lib/auth';
 
 const rawBaseQuery = fetchBaseQuery({
@@ -44,14 +44,6 @@ export const apiSlice = createApi({
       query: () => '/auth/me',
       providesTags: ['User'],
     }),
-    updateSettings: builder.mutation<{ ok: boolean }, { gemini_api_key: string }>({
-      query: (body) => ({
-        url: '/auth/settings',
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: ['User'],
-    }),
 
     uploadResume: builder.mutation<Record<string, unknown>, File>({
       query: (file) => {
@@ -84,7 +76,7 @@ export const apiSlice = createApi({
       invalidatesTags: ['User'],
     }),
 
-    getJobs: builder.query<{ items: Job[]; total: number; page: number; per_page: number }, Record<string, unknown> | void>({
+    getJobs: builder.query<{ items: Job[]; total: number; page: number; per_page: number }, JobListParams | void>({
       query: (params) => ({
         url: '/jobs/',
         params,
@@ -221,7 +213,6 @@ export const {
   useRegisterMutation,
   useLoginMutation,
   useGetMeQuery,
-  useUpdateSettingsMutation,
   useUploadResumeMutation,
   useSavePreferencesMutation,
   useGetJobsQuery,

@@ -10,7 +10,7 @@ interface JobRowProps {
   onOpen?: (job: Job) => void;
 }
 
-function getMatchScore(value: Job['match_score']) {
+function getMatchScore(value: any) {
   if (value === null || value === undefined) return null;
   const score = Number(value);
   return Number.isFinite(score) ? score : null;
@@ -22,10 +22,11 @@ export default function JobRow({ job, onDelete, onGenerateLetter, isGenerating, 
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.98, y: 15 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, height: 0 }}
-      className="p-5 flex items-center justify-between group hover:bg-[#f7f7f7]/50 transition-colors cursor-pointer"
+      transition={{ duration: 0.2 }}
+      className="px-5 py-4 flex items-center justify-between group hover:bg-white transition-all cursor-pointer border-l-4 border-transparent hover:border-l-[#111111] hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative z-10 my-1 rounded-r-lg"
       onClick={() => onOpen?.(job)}
       role="button"
       tabIndex={0}

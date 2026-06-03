@@ -8,7 +8,7 @@ interface JobCardProps {
   accentColor?: string;
 }
 
-function getMatchScore(value: Job['match_score']) {
+function getMatchScore(value: any) {
   if (value === null || value === undefined || value === '') return null;
   const score = Number(value);
   return Number.isFinite(score) ? score : null;
@@ -19,8 +19,8 @@ function JobCard({ job, onDelete, dragging = false, accentColor = '#ededed' }: J
 
   return (
     <div 
-      className={`group relative bg-white rounded-[20px] p-5 text-left transition-all ${
-        dragging ? 'shadow-2xl border-[#111111] border-2 scale-105 z-50' : 'border border-[#ededed] shadow-sm hover:shadow-md hover:border-[#d4d4d4]'
+      className={`group relative bg-white rounded-[20px] p-5 text-left transition-all duration-200 ${
+        dragging ? 'shadow-2xl border-[#111111] border-2 scale-105 rotate-2 z-50 cursor-grabbing' : 'border border-[#ededed] shadow-sm hover:shadow-md hover:border-[#111111]/30 cursor-grab'
       }`}
     >
       <div 

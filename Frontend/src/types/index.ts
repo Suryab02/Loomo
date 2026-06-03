@@ -35,7 +35,7 @@ export interface User {
   notice_period?: string;
   platforms?: string;
   onboarding_complete?: boolean;
-  gemini_api_key?: string | null;
+
   preferences?: Record<string, any>;
   llm_budget?: number;
 }
@@ -71,4 +71,13 @@ export interface ParseJobResult {
   platform?: string;
   job_description?: string;
   subject_preview?: string;
+}
+export interface JobListParams {
+  q?: string;
+  status?: JobStatus | '';
+  platform?: string;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  per_page?: number;
 }

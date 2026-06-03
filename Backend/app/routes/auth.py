@@ -18,8 +18,7 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class SettingsUpdate(BaseModel):
-    gemini_api_key: str
+
 
 @router.post("/register")
 def register(request: UserRegister, db: Session = Depends(get_db)):
@@ -68,10 +67,3 @@ def login(request: UserLogin, db: Session = Depends(get_db)):
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-@router.put("/settings")
-def update_settings(request: SettingsUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    logger.info(f"Updating settings for user: {current_user.email}")
-    current_user.gemini_api_key = request.gemini_api_key
-    db.commit()
-    db.refresh(current_user)
-    return {"ok": True}

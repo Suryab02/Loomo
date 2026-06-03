@@ -74,8 +74,23 @@ async function init() {
   $("saveSection").style.display = "block";
   $("hintSection").style.display = "none";
   const jobId = getLinkedInJobId(tabUrl);
-  if (jobId) $("saveMeta").textContent = `LinkedIn Job #${jobId} detected. Ready to save.`;
-  else $("saveMeta").textContent = `Ready to extract job details from this page.`;
+  
+  if (jobId) {
+    if (!tabUrl.includes("/jobs/view/")) {
+      $("saveMeta").innerHTML = `LinkedIn Job #${jobId} detected.<br><strong style="color:#b45309;">Split-view detected:</strong> Please open the dedicated job page to extract clean data.`;
+      setBtnState($("saveJobBtn"), "redirect", "↗️  Open Job Page to Extract");
+      $("saveJobBtn").dataset.action = "redirect";
+      $("saveJobBtn").dataset.url = canonicalUrl(tabUrl);
+    } else {
+      $("saveMeta").textContent = `LinkedIn Job #${jobId} detected on clean page. Ready to save.`;
+      setBtnState($("saveJobBtn"), "default", "💾  Save This Job");
+      $("saveJobBtn").dataset.action = "save";
+    }
+  } else {
+    $("saveMeta").textContent = `Ready to extract job details from this page.`;
+    setBtnState($("saveJobBtn"), "default", "💾  Save This Job");
+    $("saveJobBtn").dataset.action = "save";
+  }
 
   // Fetch stats from backend
   const stats = await apiFetch("/insights/stats", token);
@@ -91,6 +106,15 @@ async function init() {
 
 async function handleSaveJob() {
   const btn = $("saveJobBtn");
+  
+  if (btn.dataset.action === "redirect") {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    chrome.tabs.update(tab.id, { url: btn.dataset.url });
+    // The popup will close automatically when the tab updates, but we can call window.close() just in case.
+    window.close();
+    return;
+  }
+
   btn.disabled = true;
   setBtnState(btn, "loading", "⏳  Scanning page...");
 

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Upload, Target, Loader2, Search, SlidersHorizontal } from 'lucide-react';
+import { Plus, Target, Loader2, Search, SlidersHorizontal } from 'lucide-react';
 import {
   useGetStatsQuery,
   useGetJobsQuery,
@@ -8,7 +8,6 @@ import {
   useAddJobMutation,
   useDeleteJobMutation,
   useParseJobTextMutation,
-  useUploadResumeMutation,
   useSnoozeReminderMutation,
   useMarkReminderContactedMutation,
   useSyncGmailMutation,
@@ -31,7 +30,6 @@ import { getErrorMessage } from '../lib/apiError';
 
 function Dashboard() {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filters hook
   const { searchInput, setSearchInput, listParams, setListParams, resetFilters } = useDashboardFilters();
@@ -45,7 +43,6 @@ function Dashboard() {
   const [addJob] = useAddJobMutation();
   const [deleteJob] = useDeleteJobMutation();
   const [parseJobText, { isLoading: parsing }] = useParseJobTextMutation();
-  const [uploadResume] = useUploadResumeMutation();
   const [snoozeReminder] = useSnoozeReminderMutation();
   const [markReminderContacted] = useMarkReminderContactedMutation();
   const [syncGmail, { isLoading: syncingGmail }] = useSyncGmailMutation();
@@ -57,7 +54,6 @@ function Dashboard() {
   const [showAddJob, setShowAddJob] = useState(false);
   const [adding, setAdding] = useState(false);
   const [pasteText, setPasteText] = useState('');
-  const [uploadingResume, setUploadingResume] = useState(false);
   const [newJob, setNewJob] = useState<Partial<Job>>({
     company: '', role: '', job_description: '', platform: '', location: '', salary_range: '', job_url: '',
   });
@@ -91,20 +87,6 @@ function Dashboard() {
     }
   };
 
-  const handleResumeReupload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingResume(true);
-    try {
-      await uploadResume(file).unwrap();
-      toast('Resume processed — skills updated.', 'success');
-    } catch (err) {
-      toast(getErrorMessage(err, 'Failed to parse resume.'), 'error');
-    } finally {
-      setUploadingResume(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
 
   const handleDeleteJob = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this application?')) return;
@@ -142,7 +124,12 @@ function Dashboard() {
       setFoundJobs(res.jobs_found || []);
       toast(`Found ${(res.jobs_found || []).length} message(s). Review and import.`, 'success');
     } catch (err) {
-      toast(getErrorMessage(err, 'Gmail sync failed'), 'error');
+      const msg = getErrorMessage(err, 'Gmail sync failed');
+      if (msg.includes('not found') && msg.includes('Label')) {
+        toast("Please create a 'Loomo' label in Gmail and apply it to job emails.", 'error');
+      } else {
+        toast(msg, 'error');
+      }
     }
   };
 
@@ -200,15 +187,14 @@ function Dashboard() {
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <input type="file" accept=".pdf" ref={fileInputRef} onChange={handleResumeReupload} className="hidden" />
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingResume}
-              className="group flex items-center gap-2 px-5 py-2.5 bg-[#f7f7f7] hover:bg-[#ededed] text-[#111111] text-sm font-semibold rounded-full border border-[#ededed] transition-all disabled:opacity-50"
+              onClick={handleSyncGmail}
+              disabled={syncingGmail}
+              className="group flex items-center gap-2 px-5 py-2.5 bg-[#f7f7f7] hover:bg-[#ededed] text-[#111111] text-sm font-semibold rounded-full border border-[#ededed] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.05)] disabled:opacity-50 active:scale-95"
             >
-              {uploadingResume ? <Upload className="w-4 h-4 text-[#737373]" /> : <Upload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />}
-              {uploadingResume ? 'Processing...' : 'Re-sync Resume'}
+              {syncingGmail ? <Loader2 className="w-4 h-4 opacity-0 text-[#737373]" /> : <Loader2 className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500 text-[#737373]" />}
+              {syncingGmail ? 'Syncing...' : 'Sync Gmail (Beta)'}
             </button>
             <button
               type="button"
@@ -240,8 +226,8 @@ function Dashboard() {
           onContacted={handleContacted}
         />
 
-        <div className="border border-[#ededed] rounded-[16px] bg-white overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-[#ededed] flex flex-col gap-4">
+        <div className="border border-[#ededed] rounded-[16px] bg-white overflow-visible shadow-sm relative z-0">
+          <div className="px-6 py-4 border-b border-[#ededed] flex flex-col gap-4 sticky top-0 z-20 bg-white/70 backdrop-blur-xl rounded-t-[16px]">
             <div className="flex justify-between items-center text-sm font-medium text-[#111111]">
               <span>Applications</span>
               <span className="text-[#737373] font-normal">{jobsTotal} total</span>
@@ -349,22 +335,7 @@ function Dashboard() {
           )}
         </div>
 
-        <div className="mt-20 pt-8 border-t border-[#f7f7f7] flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-center md:text-left">
-            <h4 className="text-sm font-bold text-[#111111] mb-1">Workspace Tools</h4>
-            <p className="text-[12px] text-[#a3a3a3]">Experimental integrations for advanced users.</p>
-          </div>
 
-          <button
-            type="button"
-            onClick={handleSyncGmail}
-            disabled={syncingGmail}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-[#f7f7f7] text-[#111111] text-[12px] font-bold rounded-full border border-[#ededed] shadow-sm transition-all disabled:opacity-50 active:scale-95"
-          >
-            {syncingGmail ? <Loader2 className="w-4 h-4 opacity-0" /> : <Loader2 className="w-4 h-4" />}
-            {syncingGmail ? 'Syncing...' : 'Sync Gmail (Beta)'}
-          </button>
-        </div>
       </main>
 
       {showAddJob && (

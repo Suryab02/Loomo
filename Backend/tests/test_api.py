@@ -83,22 +83,3 @@ def test_platforms_endpoint_groups_platform_counts(client: TestClient, auth_head
     assert response.status_code == 200
     assert response.json()["LinkedIn"] == 2
 
-
-def test_settings_allows_clearing_api_key(client: TestClient, auth_headers: dict[str, str]):
-    save_response = client.put(
-        "/auth/settings",
-        headers=auth_headers,
-        json={"gemini_api_key": "test-key-123"},
-    )
-    assert save_response.status_code == 200
-
-    clear_response = client.put(
-        "/auth/settings",
-        headers=auth_headers,
-        json={"gemini_api_key": ""},
-    )
-    assert clear_response.status_code == 200
-
-    me_response = client.get("/auth/me", headers=auth_headers)
-    assert me_response.status_code == 200
-    assert me_response.json()["gemini_api_key"] is None
